@@ -38,6 +38,31 @@ A webapp to search for movies and view Rotten Tomatoes scores and IMDB Parents G
 
 5. Open http://localhost:5173
 
+## Docker (Self-Hosting)
+
+1. Clone the repo and create `.env`:
+   ```bash
+   git clone https://github.com/Unbridle0065/movie-search.git
+   cd movie-search
+   echo "OMDB_API_KEY=your_key_here" > .env
+   ```
+
+2. Run with Docker Compose:
+   ```bash
+   docker compose up -d
+   ```
+
+3. Open http://your-server-ip:3001
+
+### TrueNAS SCALE
+
+1. Go to **Apps** > **Discover Apps** > **Custom App**
+2. Or use Dockge/Portainer to deploy the `docker-compose.yml`
+3. Set environment variable `OMDB_API_KEY`
+4. Map port 3001
+
+To use your domain, set up a reverse proxy (Traefik, nginx, or Cloudflare Tunnel).
+
 ## Tech Stack
 
 - **Frontend**: React + Vite + Tailwind CSS

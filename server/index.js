@@ -1,14 +1,22 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend files in production
+app.use(express.static(join(__dirname, '../dist')));
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY;
 
@@ -90,6 +98,11 @@ app.get('/api/parents-guide/:imdbId', async (req, res) => {
     console.error('Parents guide error:', error);
     res.status(500).json({ error: 'Failed to fetch parents guide' });
   }
+});
+
+// Serve index.html for all other routes (SPA support)
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
 app.listen(PORT, () => {
