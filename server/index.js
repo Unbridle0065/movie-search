@@ -101,7 +101,7 @@ app.get('/api/parents-guide/:imdbId', async (req, res) => {
 });
 
 // Serve index.html for all other routes (SPA support)
-app.get('*', (req, res) => {
+app.get('/{*splat}', (req, res) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
