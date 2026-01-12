@@ -14,6 +14,9 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust reverse proxy (NGINX)
+app.set('trust proxy', 1);
+
 // Security hardening
 app.disable('x-powered-by');
 app.use(cors({
@@ -30,6 +33,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));
