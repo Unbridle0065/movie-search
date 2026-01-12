@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -15,8 +16,32 @@ const PORT = process.env.PORT || 3001;
 
 // Security hardening
 app.disable('x-powered-by');
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'https://movies.nuttracker.net' }));
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'https://movies.nuttracker.net',
+  credentials: true
+}));
 app.use(express.json());
+
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-secret-change-me',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
+}));
+
+// Auth middleware - protects API routes
+const requireAuth = (req, res, next) => {
+  if (req.session?.authenticated) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+};
 
 // Rate limiting for API routes (100 requests per 15 minutes)
 const apiLimiter = rateLimit({
@@ -37,8 +62,26 @@ if (!OMDB_API_KEY) {
   process.exit(1);
 }
 
+// Auth endpoints
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const validUser = process.env.AUTH_USER || 'admin';
+  const validPass = process.env.AUTH_PASS || 'changeme';
+
+  if (username === validUser && password === validPass) {
+    req.session.authenticated = true;
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+app.get('/api/auth/check', (req, res) => {
+  res.json({ authenticated: !!req.session?.authenticated });
+});
+
 // Search movies by title
-app.get('/api/search', async (req, res) => {
+app.get('/api/search', requireAuth, async (req, res) => {
   const query = req.query.q;
   if (!query) {
     return res.status(400).json({ error: 'Missing search query' });
@@ -61,7 +104,7 @@ app.get('/api/search', async (req, res) => {
 });
 
 // Get movie details by IMDB ID
-app.get('/api/movie/:imdbId', async (req, res) => {
+app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
   const { imdbId } = req.params;
 
   // Validate IMDB ID format (tt followed by 7+ digits)
@@ -104,7 +147,7 @@ app.get('/api/movie/:imdbId', async (req, res) => {
 });
 
 // Get IMDB Parents Guide
-app.get('/api/parents-guide/:imdbId', async (req, res) => {
+app.get('/api/parents-guide/:imdbId', requireAuth, async (req, res) => {
   const { imdbId } = req.params;
 
   // Validate IMDB ID format (tt followed by 7+ digits)
