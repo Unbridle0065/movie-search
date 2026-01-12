@@ -51,6 +51,13 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+// Stricter rate limiting for login (5 attempts per 15 minutes)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many login attempts, please try again later' }
+});
+
 // Serve static frontend files in production
 app.use(express.static(join(__dirname, '../dist')));
 
@@ -63,7 +70,7 @@ if (!OMDB_API_KEY) {
 }
 
 // Auth endpoints
-app.post('/api/login', (req, res) => {
+app.post('/api/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
   const validUser = process.env.AUTH_USER || 'admin';
   const validPass = process.env.AUTH_PASS || 'changeme';
