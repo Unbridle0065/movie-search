@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { fetchParentsGuide } from './parentsGuide.js';
@@ -12,8 +13,18 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// Security hardening
+app.disable('x-powered-by');
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'https://movies.nuttracker.net' }));
 app.use(express.json());
+
+// Rate limiting for API routes (100 requests per 15 minutes)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, please try again later' }
+});
+app.use('/api/', apiLimiter);
 
 // Serve static frontend files in production
 app.use(express.static(join(__dirname, '../dist')));
@@ -53,6 +64,11 @@ app.get('/api/search', async (req, res) => {
 app.get('/api/movie/:imdbId', async (req, res) => {
   const { imdbId } = req.params;
 
+  // Validate IMDB ID format (tt followed by 7+ digits)
+  if (!/^tt\d{7,}$/.test(imdbId)) {
+    return res.status(400).json({ error: 'Invalid IMDB ID format' });
+  }
+
   try {
     const response = await fetch(
       `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbId}&plot=full`
@@ -90,6 +106,11 @@ app.get('/api/movie/:imdbId', async (req, res) => {
 // Get IMDB Parents Guide
 app.get('/api/parents-guide/:imdbId', async (req, res) => {
   const { imdbId } = req.params;
+
+  // Validate IMDB ID format (tt followed by 7+ digits)
+  if (!/^tt\d{7,}$/.test(imdbId)) {
+    return res.status(400).json({ error: 'Invalid IMDB ID format' });
+  }
 
   try {
     const guide = await fetchParentsGuide(imdbId);
