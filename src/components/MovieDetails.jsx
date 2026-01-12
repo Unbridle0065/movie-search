@@ -70,8 +70,8 @@ export default function MovieDetails({ imdbId, onClose }) {
 
       try {
         const [movieRes, guideRes] = await Promise.all([
-          fetch(`/api/movie/${imdbId}`),
-          fetch(`/api/parents-guide/${imdbId}`)
+          fetch(`/api/movie/${imdbId}`, { credentials: 'include' }),
+          fetch(`/api/parents-guide/${imdbId}`, { credentials: 'include' })
         ]);
 
         if (!movieRes.ok) throw new Error('Failed to fetch movie');

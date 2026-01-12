@@ -27,7 +27,9 @@ function App() {
     setHasSearched(true);
 
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+        credentials: 'include'
+      });
       const data = await response.json();
 
       if (data.error) {
