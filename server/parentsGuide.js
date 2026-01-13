@@ -56,6 +56,7 @@ export async function fetchParentsGuide(imdbId) {
   const parentsGuideData = pageProps?.contentData?.data?.title?.parentsGuide;
   const categories = parentsGuideData?.categories || [];
   const nonSpoilerCategories = parentsGuideData?.nonSpoilerCategories || [];
+  const spoilerCategories = parentsGuideData?.spoilerCategories || [];
 
   const guide = {};
 
@@ -66,6 +67,16 @@ export async function fetchParentsGuide(imdbId) {
     const severity = cat.severity?.text || 'Unknown';
     if (id) {
       severityMap[id] = severity;
+    }
+  }
+
+  // Build spoiler count map from spoilerCategories
+  const spoilerCountMap = {};
+  for (const cat of spoilerCategories) {
+    const id = cat.category?.id;
+    const count = cat.guideItems?.total || 0;
+    if (id) {
+      spoilerCountMap[id] = count;
     }
   }
 
@@ -94,7 +105,8 @@ export async function fetchParentsGuide(imdbId) {
     guide[id.toLowerCase()] = {
       name: CATEGORY_MAP[id],
       severity: severityMap[id] || 'Unknown',
-      items
+      items,
+      spoilerCount: spoilerCountMap[id] || 0
     };
   }
 
@@ -105,7 +117,8 @@ export async function fetchParentsGuide(imdbId) {
       guide[key] = {
         name,
         severity: severityMap[id] || 'Unknown',
-        items: []
+        items: [],
+        spoilerCount: spoilerCountMap[id] || 0
       };
     }
   }

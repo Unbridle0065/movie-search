@@ -17,8 +17,9 @@ function SeverityBadge({ severity }) {
   );
 }
 
-function ParentsGuideSection({ category }) {
+function ParentsGuideSection({ category, imdbLink }) {
   const hasItems = category.items.length > 0;
+  const hasSpoilers = category.spoilerCount > 0;
 
   return (
     <div className="border border-gray-700 rounded-lg overflow-hidden">
@@ -27,16 +28,37 @@ function ParentsGuideSection({ category }) {
         <SeverityBadge severity={category.severity} />
       </div>
       {hasItems ? (
-        <div className="p-4 bg-gray-900 space-y-2">
-          {category.items.map((item, i) => (
-            <p key={i} className="text-gray-300 text-sm leading-relaxed">
-              {item}
-            </p>
-          ))}
+        <div className="p-4 bg-gray-900 space-y-3">
+          <div className="space-y-2">
+            {category.items.map((item, i) => (
+              <p key={i} className="text-gray-300 text-sm leading-relaxed">
+                {item}
+              </p>
+            ))}
+          </div>
+          {hasSpoilers && (
+            <div className="border-t border-gray-800 pt-3">
+              <p className="text-yellow-400 text-sm">
+                {category.spoilerCount} spoiler{category.spoilerCount !== 1 ? 's' : ''} available -{' '}
+                <a href={imdbLink} target="_blank" rel="noopener noreferrer" className="hover:text-yellow-300 underline">
+                  view on IMDB
+                </a>
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="p-4 bg-gray-900">
-          <p className="text-gray-500 text-sm italic">No details available</p>
+          {hasSpoilers ? (
+            <p className="text-yellow-400 text-sm">
+              {category.spoilerCount} spoiler{category.spoilerCount !== 1 ? 's' : ''} available -{' '}
+              <a href={imdbLink} target="_blank" rel="noopener noreferrer" className="hover:text-yellow-300 underline">
+                view on IMDB
+              </a>
+            </p>
+          ) : (
+            <p className="text-gray-500 text-sm italic">No details available</p>
+          )}
         </div>
       )}
     </div>
@@ -235,7 +257,7 @@ export default function MovieDetails({ imdbId, onClose }) {
                 ) : (
                   <div className="space-y-3">
                     {guideCategories.map(([key, category]) => (
-                      <ParentsGuideSection key={key} category={category} />
+                      <ParentsGuideSection key={key} category={category} imdbLink={parentsGuide.link} />
                     ))}
                   </div>
                 )}
