@@ -18,7 +18,7 @@ function SeverityBadge({ severity }) {
 }
 
 function ParentsGuideSection({ category }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [spoilersExpanded, setSpoilersExpanded] = useState(false);
 
   const hasSpoilers = category.spoilerItems && category.spoilerItems.length > 0;
