@@ -62,6 +62,8 @@ export async function fetchParentsGuide(imdbId) {
   console.log(`Found ${nonSpoilerCategories.length} non-spoiler categories, ${spoilerCategories.length} spoiler categories`);
   if (spoilerCategories.length > 0) {
     console.log('Spoiler categories:', spoilerCategories.map(c => c.category?.id).filter(Boolean));
+    // Dump the first spoiler category structure
+    console.log('First spoiler category structure:', JSON.stringify(spoilerCategories[0], null, 2));
   }
 
   const guide = {};
