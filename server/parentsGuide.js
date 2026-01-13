@@ -56,21 +56,6 @@ export async function fetchParentsGuide(imdbId) {
   const parentsGuideData = pageProps?.contentData?.data?.title?.parentsGuide;
   const categories = parentsGuideData?.categories || [];
   const nonSpoilerCategories = parentsGuideData?.nonSpoilerCategories || [];
-  const spoilerCategories = parentsGuideData?.spoilerCategories || [];
-
-  // Debug logging
-  console.log(`Found ${categories.length} categories, ${nonSpoilerCategories.length} non-spoiler categories`);
-
-  // Check if categories array has guideItems
-  if (categories.length > 0 && categories[0].guideItems) {
-    const firstCat = categories[0];
-    console.log(`First category (${firstCat.category?.id}) has ${firstCat.guideItems?.edges?.length || 0} total items`);
-
-    // Check for items with isSpoiler flag
-    const spoilerCount = firstCat.guideItems?.edges?.filter(e => e.node?.isSpoiler === true).length || 0;
-    const nonSpoilerCount = firstCat.guideItems?.edges?.filter(e => e.node?.isSpoiler === false).length || 0;
-    console.log(`  - ${nonSpoilerCount} non-spoiler, ${spoilerCount} spoiler items`);
-  }
 
   const guide = {};
 
@@ -84,23 +69,16 @@ export async function fetchParentsGuide(imdbId) {
     }
   }
 
-  // Build a map to collect items by category
-  const itemsMap = {};
-
-  // Process ALL items from the main categories array
-  for (const cat of categories) {
+  // Get items from nonSpoilerCategories (spoilers are loaded dynamically by IMDB, not in static HTML)
+  for (const cat of nonSpoilerCategories) {
     const id = cat.category?.id;
     if (!id || !CATEGORY_MAP[id]) continue;
 
-    if (!itemsMap[id]) {
-      itemsMap[id] = { items: [], spoilerItems: [] };
-    }
-
+    const items = [];
     const edges = cat.guideItems?.edges || [];
+
     for (const edge of edges) {
       const text = edge.node?.text?.plaidHtml;
-      const isSpoiler = edge.node?.isSpoiler === true;
-
       if (text) {
         const cleanText = text
           .replace(/&amp;/g, '&')
@@ -109,24 +87,14 @@ export async function fetchParentsGuide(imdbId) {
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/<[^>]*>/g, '');
-
-        if (isSpoiler) {
-          itemsMap[id].spoilerItems.push(cleanText);
-        } else {
-          itemsMap[id].items.push(cleanText);
-        }
+        items.push(cleanText);
       }
     }
-    console.log(`${id}: ${itemsMap[id].items.length} regular, ${itemsMap[id].spoilerItems.length} spoiler items`);
-  }
 
-  // Build the guide object
-  for (const [id, data] of Object.entries(itemsMap)) {
     guide[id.toLowerCase()] = {
       name: CATEGORY_MAP[id],
       severity: severityMap[id] || 'Unknown',
-      items: data.items,
-      spoilerItems: data.spoilerItems
+      items
     };
   }
 
@@ -137,8 +105,7 @@ export async function fetchParentsGuide(imdbId) {
       guide[key] = {
         name,
         severity: severityMap[id] || 'Unknown',
-        items: [],
-        spoilerItems: []
+        items: []
       };
     }
   }
