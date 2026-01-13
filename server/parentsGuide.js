@@ -68,21 +68,22 @@ export async function fetchParentsGuide(imdbId) {
     }
   }
 
-  // Get all items from categories (includes both spoilers and non-spoilers)
-  for (const cat of categories) {
+  // Build a map to collect items by category
+  const itemsMap = {};
+
+  // First, get non-spoiler items from nonSpoilerCategories
+  for (const cat of nonSpoilerCategories) {
     const id = cat.category?.id;
     if (!id || !CATEGORY_MAP[id]) continue;
 
-    const items = [];
-    const spoilerItems = [];
-    const edges = cat.guideItems?.edges || [];
+    if (!itemsMap[id]) {
+      itemsMap[id] = { items: [], spoilerItems: [] };
+    }
 
+    const edges = cat.guideItems?.edges || [];
     for (const edge of edges) {
       const text = edge.node?.text?.plaidHtml;
-      const isSpoiler = edge.node?.isSpoiler || false;
-
       if (text) {
-        // Clean up HTML entities and tags
         const cleanText = text
           .replace(/&amp;/g, '&')
           .replace(/&quot;/g, '"')
@@ -90,20 +91,45 @@ export async function fetchParentsGuide(imdbId) {
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/<[^>]*>/g, '');
-
-        if (isSpoiler) {
-          spoilerItems.push(cleanText);
-        } else {
-          items.push(cleanText);
-        }
+        itemsMap[id].items.push(cleanText);
       }
     }
+  }
 
+  // Then, get ALL items from categories and filter for spoilers
+  for (const cat of categories) {
+    const id = cat.category?.id;
+    if (!id || !CATEGORY_MAP[id]) continue;
+
+    if (!itemsMap[id]) {
+      itemsMap[id] = { items: [], spoilerItems: [] };
+    }
+
+    const edges = cat.guideItems?.edges || [];
+    for (const edge of edges) {
+      const text = edge.node?.text?.plaidHtml;
+      const isSpoiler = edge.node?.isSpoiler || false;
+
+      if (text && isSpoiler) {
+        const cleanText = text
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/<[^>]*>/g, '');
+        itemsMap[id].spoilerItems.push(cleanText);
+      }
+    }
+  }
+
+  // Build the guide object
+  for (const [id, data] of Object.entries(itemsMap)) {
     guide[id.toLowerCase()] = {
       name: CATEGORY_MAP[id],
       severity: severityMap[id] || 'Unknown',
-      items,
-      spoilerItems
+      items: data.items,
+      spoilerItems: data.spoilerItems
     };
   }
 
