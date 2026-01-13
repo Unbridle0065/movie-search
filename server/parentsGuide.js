@@ -53,8 +53,10 @@ export async function fetchParentsGuide(imdbId) {
 
   // Navigate to the parental guide data
   const pageProps = nextData?.props?.pageProps;
-  const categories = pageProps?.contentData?.data?.title?.parentsGuide?.categories || [];
-  const nonSpoilerCategories = pageProps?.contentData?.data?.title?.parentsGuide?.nonSpoilerCategories || [];
+  const parentsGuideData = pageProps?.contentData?.data?.title?.parentsGuide;
+  const categories = parentsGuideData?.categories || [];
+  const nonSpoilerCategories = parentsGuideData?.nonSpoilerCategories || [];
+  const spoilerCategories = parentsGuideData?.spoilerCategories || [];
 
   const guide = {};
 
@@ -96,8 +98,8 @@ export async function fetchParentsGuide(imdbId) {
     }
   }
 
-  // Then, get ALL items from categories and filter for spoilers
-  for (const cat of categories) {
+  // Then, get spoiler items from spoilerCategories
+  for (const cat of spoilerCategories) {
     const id = cat.category?.id;
     if (!id || !CATEGORY_MAP[id]) continue;
 
@@ -108,9 +110,7 @@ export async function fetchParentsGuide(imdbId) {
     const edges = cat.guideItems?.edges || [];
     for (const edge of edges) {
       const text = edge.node?.text?.plaidHtml;
-      const isSpoiler = edge.node?.isSpoiler || false;
-
-      if (text && isSpoiler) {
+      if (text) {
         const cleanText = text
           .replace(/&amp;/g, '&')
           .replace(/&quot;/g, '"')
