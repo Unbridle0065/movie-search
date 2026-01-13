@@ -58,6 +58,12 @@ export async function fetchParentsGuide(imdbId) {
   const nonSpoilerCategories = parentsGuideData?.nonSpoilerCategories || [];
   const spoilerCategories = parentsGuideData?.spoilerCategories || [];
 
+  // Debug logging
+  console.log(`Found ${nonSpoilerCategories.length} non-spoiler categories, ${spoilerCategories.length} spoiler categories`);
+  if (spoilerCategories.length > 0) {
+    console.log('Spoiler categories:', spoilerCategories.map(c => c.category?.id).filter(Boolean));
+  }
+
   const guide = {};
 
   // Build severity map from categories
