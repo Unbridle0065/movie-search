@@ -59,11 +59,17 @@ export async function fetchParentsGuide(imdbId) {
   const spoilerCategories = parentsGuideData?.spoilerCategories || [];
 
   // Debug logging
-  console.log(`Found ${nonSpoilerCategories.length} non-spoiler categories, ${spoilerCategories.length} spoiler categories`);
-  if (spoilerCategories.length > 0) {
-    console.log('Spoiler categories:', spoilerCategories.map(c => c.category?.id).filter(Boolean));
-    // Dump the first spoiler category structure
-    console.log('First spoiler category structure:', JSON.stringify(spoilerCategories[0], null, 2));
+  console.log(`Found ${categories.length} categories, ${nonSpoilerCategories.length} non-spoiler categories`);
+
+  // Check if categories array has guideItems
+  if (categories.length > 0 && categories[0].guideItems) {
+    const firstCat = categories[0];
+    console.log(`First category (${firstCat.category?.id}) has ${firstCat.guideItems?.edges?.length || 0} total items`);
+
+    // Check for items with isSpoiler flag
+    const spoilerCount = firstCat.guideItems?.edges?.filter(e => e.node?.isSpoiler === true).length || 0;
+    const nonSpoilerCount = firstCat.guideItems?.edges?.filter(e => e.node?.isSpoiler === false).length || 0;
+    console.log(`  - ${nonSpoilerCount} non-spoiler, ${spoilerCount} spoiler items`);
   }
 
   const guide = {};
@@ -81,8 +87,8 @@ export async function fetchParentsGuide(imdbId) {
   // Build a map to collect items by category
   const itemsMap = {};
 
-  // First, get non-spoiler items from nonSpoilerCategories
-  for (const cat of nonSpoilerCategories) {
+  // Process ALL items from the main categories array
+  for (const cat of categories) {
     const id = cat.category?.id;
     if (!id || !CATEGORY_MAP[id]) continue;
 
@@ -93,6 +99,8 @@ export async function fetchParentsGuide(imdbId) {
     const edges = cat.guideItems?.edges || [];
     for (const edge of edges) {
       const text = edge.node?.text?.plaidHtml;
+      const isSpoiler = edge.node?.isSpoiler === true;
+
       if (text) {
         const cleanText = text
           .replace(/&amp;/g, '&')
@@ -101,45 +109,15 @@ export async function fetchParentsGuide(imdbId) {
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/<[^>]*>/g, '');
-        itemsMap[id].items.push(cleanText);
+
+        if (isSpoiler) {
+          itemsMap[id].spoilerItems.push(cleanText);
+        } else {
+          itemsMap[id].items.push(cleanText);
+        }
       }
     }
-  }
-
-  // Then, get spoiler items from spoilerCategories
-  for (const cat of spoilerCategories) {
-    const id = cat.category?.id;
-    if (!id || !CATEGORY_MAP[id]) continue;
-
-    if (!itemsMap[id]) {
-      itemsMap[id] = { items: [], spoilerItems: [] };
-    }
-
-    const edges = cat.guideItems?.edges || [];
-    console.log(`${id}: found ${edges.length} edges in spoiler category`);
-
-    // Log the structure of the first edge if available
-    if (edges.length > 0 && edges[0]) {
-      console.log(`First edge keys:`, Object.keys(edges[0]));
-      if (edges[0].node) {
-        console.log(`First edge.node keys:`, Object.keys(edges[0].node));
-      }
-    }
-
-    for (const edge of edges) {
-      const text = edge.node?.text?.plaidHtml;
-      if (text) {
-        const cleanText = text
-          .replace(/&amp;/g, '&')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/<[^>]*>/g, '');
-        itemsMap[id].spoilerItems.push(cleanText);
-      }
-    }
-    console.log(`${id}: ${itemsMap[id].spoilerItems.length} spoiler items extracted`);
+    console.log(`${id}: ${itemsMap[id].items.length} regular, ${itemsMap[id].spoilerItems.length} spoiler items`);
   }
 
   // Build the guide object
