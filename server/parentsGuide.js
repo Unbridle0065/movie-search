@@ -114,6 +114,16 @@ export async function fetchParentsGuide(imdbId) {
     }
 
     const edges = cat.guideItems?.edges || [];
+    console.log(`${id}: found ${edges.length} edges in spoiler category`);
+
+    // Log the structure of the first edge if available
+    if (edges.length > 0 && edges[0]) {
+      console.log(`First edge keys:`, Object.keys(edges[0]));
+      if (edges[0].node) {
+        console.log(`First edge.node keys:`, Object.keys(edges[0].node));
+      }
+    }
+
     for (const edge of edges) {
       const text = edge.node?.text?.plaidHtml;
       if (text) {
@@ -127,7 +137,7 @@ export async function fetchParentsGuide(imdbId) {
         itemsMap[id].spoilerItems.push(cleanText);
       }
     }
-    console.log(`${id}: ${itemsMap[id].spoilerItems.length} spoiler items`);
+    console.log(`${id}: ${itemsMap[id].spoilerItems.length} spoiler items extracted`);
   }
 
   // Build the guide object
