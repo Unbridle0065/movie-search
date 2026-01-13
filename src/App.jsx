@@ -47,6 +47,12 @@ function App() {
     }
   }
 
+  function handleClear() {
+    setMovies([]);
+    setError(null);
+    setHasSearched(false);
+  }
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -69,7 +75,7 @@ function App() {
           <p className="text-gray-400 mb-8">
             Search movies and view ratings & parental guidance
           </p>
-          <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+          <SearchBar onSearch={handleSearch} onClear={handleClear} isLoading={isLoading} />
         </div>
       </header>
 

@@ -1,12 +1,19 @@
 import { useState } from 'react';
 
-export default function SearchBar({ onSearch, isLoading }) {
+export default function SearchBar({ onSearch, onClear, isLoading }) {
   const [query, setQuery] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
       onSearch(query.trim());
+    }
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    if (onClear) {
+      onClear();
     }
   };
 
@@ -23,7 +30,7 @@ export default function SearchBar({ onSearch, isLoading }) {
         {query && (
           <button
             type="button"
-            onClick={() => setQuery('')}
+            onClick={handleClear}
             className="absolute right-28 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
