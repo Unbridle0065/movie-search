@@ -127,6 +127,7 @@ export async function fetchParentsGuide(imdbId) {
         itemsMap[id].spoilerItems.push(cleanText);
       }
     }
+    console.log(`${id}: ${itemsMap[id].spoilerItems.length} spoiler items`);
   }
 
   // Build the guide object
