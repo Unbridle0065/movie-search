@@ -69,7 +69,7 @@ export async function fetchParentsGuide(imdbId) {
     }
   }
 
-  // Get items from nonSpoilerCategories (spoilers are loaded dynamically by IMDB, not in static HTML)
+  // Get items from nonSpoilerCategories
   for (const cat of nonSpoilerCategories) {
     const id = cat.category?.id;
     if (!id || !CATEGORY_MAP[id]) continue;
