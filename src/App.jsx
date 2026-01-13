@@ -66,7 +66,7 @@ function App() {
             Movie Search
           </h1>
           <p className="text-gray-400 mb-8">
-            Search for movies and view Rotten Tomatoes scores & parental guidance
+            Search movies and view ratings & parental guidance
           </p>
           <SearchBar onSearch={handleSearch} isLoading={isLoading} />
         </div>
