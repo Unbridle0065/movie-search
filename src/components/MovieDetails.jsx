@@ -133,6 +133,16 @@ export default function MovieDetails({ imdbId, onClose }) {
     <div className="fixed inset-0 bg-black/90 overflow-y-auto z-50">
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-4xl mx-auto">
+          <button
+            onClick={onClose}
+            className="mb-6 ml-auto flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to search
+          </button>
+
           <div className="bg-gray-900 rounded-2xl overflow-hidden">
             <div className="md:flex">
               <div className="md:w-1/3 flex-shrink-0">
@@ -154,15 +164,6 @@ export default function MovieDetails({ imdbId, onClose }) {
                 )}
               </div>
               <div className="p-6 md:p-8 flex-1">
-                <button
-                  onClick={onClose}
-                  className="mb-6 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to search
-                </button>
                 <h1 className="text-3xl font-bold text-white mb-2">{movie.Title}</h1>
                 <p className="text-gray-400 mb-4">
                   {movie.Year} &bull; {movie.Runtime} &bull; {movie.Rated}
