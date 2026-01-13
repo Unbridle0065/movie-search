@@ -24,6 +24,7 @@ function App() {
   async function handleSearch(query) {
     setIsLoading(true);
     setError(null);
+    setMovies([]); // Clear previous results immediately
     setHasSearched(true);
 
     try {
