@@ -108,7 +108,18 @@ app.get('/api/search', requireAuth, async (req, res) => {
       return res.json({ results: [], error: data.Error });
     }
 
-    res.json({ results: data.Search || [] });
+    // Deduplicate results by IMDB ID (OMDB sometimes returns duplicates)
+    const results = data.Search || [];
+    const seen = new Set();
+    const uniqueResults = results.filter(movie => {
+      if (seen.has(movie.imdbID)) {
+        return false;
+      }
+      seen.add(movie.imdbID);
+      return true;
+    });
+
+    res.json({ results: uniqueResults });
   } catch (error) {
     res.status(500).json({ error: 'Failed to search movies' });
   }
