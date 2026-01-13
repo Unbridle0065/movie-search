@@ -48,7 +48,7 @@ export async function fetchRottenTomatoesScores(movieTitle, year) {
       let movieUrl = null;
       $search('search-page-media-row').each((_, el) => {
         const $el = $search(el);
-        const resultYear = $el.attr('releaseyear');
+        const resultYear = $el.attr('release-year');
         if (resultYear && Math.abs(parseInt(resultYear) - parseInt(year)) <= 1) {
           const link = $el.find('a[href*="/m/"]').attr('href');
           if (link && !movieUrl) {
