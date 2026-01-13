@@ -85,12 +85,6 @@ function App() {
           </div>
         )}
 
-        {!hasSearched && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">Search for a movie to get started</p>
-          </div>
-        )}
-
         <MovieGrid movies={movies} onMovieClick={setSelectedMovieId} />
       </main>
 
