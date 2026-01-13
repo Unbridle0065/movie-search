@@ -68,16 +68,19 @@ export async function fetchParentsGuide(imdbId) {
     }
   }
 
-  // Get items from nonSpoilerCategories
-  for (const cat of nonSpoilerCategories) {
+  // Get all items from categories (includes both spoilers and non-spoilers)
+  for (const cat of categories) {
     const id = cat.category?.id;
     if (!id || !CATEGORY_MAP[id]) continue;
 
     const items = [];
+    const spoilerItems = [];
     const edges = cat.guideItems?.edges || [];
 
     for (const edge of edges) {
       const text = edge.node?.text?.plaidHtml;
+      const isSpoiler = edge.node?.isSpoiler || false;
+
       if (text) {
         // Clean up HTML entities and tags
         const cleanText = text
@@ -87,14 +90,20 @@ export async function fetchParentsGuide(imdbId) {
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/<[^>]*>/g, '');
-        items.push(cleanText);
+
+        if (isSpoiler) {
+          spoilerItems.push(cleanText);
+        } else {
+          items.push(cleanText);
+        }
       }
     }
 
     guide[id.toLowerCase()] = {
       name: CATEGORY_MAP[id],
       severity: severityMap[id] || 'Unknown',
-      items
+      items,
+      spoilerItems
     };
   }
 
@@ -105,7 +114,8 @@ export async function fetchParentsGuide(imdbId) {
       guide[key] = {
         name,
         severity: severityMap[id] || 'Unknown',
-        items: []
+        items: [],
+        spoilerItems: []
       };
     }
   }

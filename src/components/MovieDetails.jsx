@@ -19,6 +19,10 @@ function SeverityBadge({ severity }) {
 
 function ParentsGuideSection({ category }) {
   const [expanded, setExpanded] = useState(false);
+  const [spoilersExpanded, setSpoilersExpanded] = useState(false);
+
+  const hasSpoilers = category.spoilerItems && category.spoilerItems.length > 0;
+  const hasItems = category.items.length > 0;
 
   return (
     <div className="border border-gray-700 rounded-lg overflow-hidden">
@@ -39,16 +43,47 @@ function ParentsGuideSection({ category }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {expanded && category.items.length > 0 && (
-        <div className="p-4 bg-gray-900 space-y-2">
-          {category.items.map((item, i) => (
-            <p key={i} className="text-gray-300 text-sm leading-relaxed">
-              {item}
-            </p>
-          ))}
+      {expanded && (hasItems || hasSpoilers) && (
+        <div className="p-4 bg-gray-900 space-y-3">
+          {hasItems && (
+            <div className="space-y-2">
+              {category.items.map((item, i) => (
+                <p key={i} className="text-gray-300 text-sm leading-relaxed">
+                  {item}
+                </p>
+              ))}
+            </div>
+          )}
+          {hasSpoilers && (
+            <div className="border-t border-gray-800 pt-3">
+              <button
+                onClick={() => setSpoilersExpanded(!spoilersExpanded)}
+                className="text-yellow-400 hover:text-yellow-300 text-sm font-medium mb-2 flex items-center gap-1"
+              >
+                {spoilersExpanded ? 'Hide' : 'Show'} spoilers ({category.spoilerItems.length})
+                <svg
+                  className={`w-4 h-4 transition-transform ${spoilersExpanded ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {spoilersExpanded && (
+                <div className="space-y-2">
+                  {category.spoilerItems.map((item, i) => (
+                    <p key={i} className="text-gray-300 text-sm leading-relaxed bg-gray-800/50 p-2 rounded">
+                      {item}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
-      {expanded && category.items.length === 0 && (
+      {expanded && !hasItems && !hasSpoilers && (
         <div className="p-4 bg-gray-900">
           <p className="text-gray-500 text-sm italic">No details available</p>
         </div>
