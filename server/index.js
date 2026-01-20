@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
+import { fetchImdbRating } from './imdbRating.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -166,12 +167,26 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
       return res.status(404).json({ error: data.Error });
     }
 
-    // Fetch Rotten Tomatoes scores (critic + audience)
+    // Fetch Rotten Tomatoes scores and IMDB rating (if needed) in parallel
     let rtScores = null;
+    let imdbRating = null;
+    const needsImdbRating = !data.imdbRating || data.imdbRating === 'N/A';
+
     try {
-      rtScores = await fetchRottenTomatoesScores(data.Title, data.Year);
+      const [rtResult, imdbResult] = await Promise.all([
+        fetchRottenTomatoesScores(data.Title, data.Year).catch(e => {
+          console.error('RT fetch error:', e);
+          return null;
+        }),
+        needsImdbRating ? fetchImdbRating(req.params.imdbId).catch(e => {
+          console.error('IMDB rating fetch error:', e);
+          return null;
+        }) : Promise.resolve(null)
+      ]);
+      rtScores = rtResult;
+      imdbRating = imdbResult;
     } catch (e) {
-      console.error('RT fetch error:', e);
+      console.error('Fetch error:', e);
     }
 
     // Fallback to OMDb RT score if scraping fails
@@ -179,6 +194,8 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
 
     res.json({
       ...data,
+      imdbRating: data.imdbRating !== 'N/A' ? data.imdbRating : (imdbRating?.rating?.toString() || 'N/A'),
+      imdbVotes: data.imdbVotes !== 'N/A' ? data.imdbVotes : (imdbRating?.voteCount?.toLocaleString() || 'N/A'),
       rottenTomatoes: {
         criticScore: rtScores?.criticScore || omdbRtRating?.Value || null,
         audienceScore: rtScores?.audienceScore || null,
