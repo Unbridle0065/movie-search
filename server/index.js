@@ -99,27 +99,49 @@ app.get('/api/search', requireAuth, async (req, res) => {
   }
 
   try {
-    const response = await fetch(
-      `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(query)}&type=movie`
-    );
-    const data = await response.json();
+    // Run both search (s) and exact title match (t) in parallel
+    // The search endpoint may miss exact matches that the title endpoint finds
+    const [searchResponse, titleResponse] = await Promise.all([
+      fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(query)}&type=movie`),
+      fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${encodeURIComponent(query)}&type=movie`)
+    ]);
 
-    if (data.Response === 'False') {
-      return res.json({ results: [], error: data.Error });
+    const [searchData, titleData] = await Promise.all([
+      searchResponse.json(),
+      titleResponse.json()
+    ]);
+
+    // Deduplicate results by IMDB ID
+    const seen = new Set();
+    const results = [];
+
+    // Add exact title match first if found (prioritize exact matches)
+    if (titleData.Response === 'True' && titleData.imdbID) {
+      seen.add(titleData.imdbID);
+      results.push({
+        Title: titleData.Title,
+        Year: titleData.Year,
+        imdbID: titleData.imdbID,
+        Type: titleData.Type,
+        Poster: titleData.Poster
+      });
     }
 
-    // Deduplicate results by IMDB ID (OMDB sometimes returns duplicates)
-    const results = data.Search || [];
-    const seen = new Set();
-    const uniqueResults = results.filter(movie => {
-      if (seen.has(movie.imdbID)) {
-        return false;
+    // Add search results, skipping duplicates
+    if (searchData.Response === 'True' && searchData.Search) {
+      for (const movie of searchData.Search) {
+        if (!seen.has(movie.imdbID)) {
+          seen.add(movie.imdbID);
+          results.push(movie);
+        }
       }
-      seen.add(movie.imdbID);
-      return true;
-    });
+    }
 
-    res.json({ results: uniqueResults });
+    if (results.length === 0) {
+      return res.json({ results: [], error: searchData.Error || 'Movie not found!' });
+    }
+
+    res.json({ results });
   } catch (error) {
     res.status(500).json({ error: 'Failed to search movies' });
   }
