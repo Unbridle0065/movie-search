@@ -183,7 +183,7 @@ export default function MovieDetails({ imdbId, onClose }) {
                 </div>
 
                 <h2 className="text-xl font-bold text-white mb-4">Ratings</h2>
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3">
                   {(movie.rottenTomatoes?.criticScore || movie.rottenTomatoes?.audienceScore) && (
                     <div className="flex flex-wrap gap-3">
                       {movie.rottenTomatoes?.criticScore && (
@@ -233,7 +233,7 @@ export default function MovieDetails({ imdbId, onClose }) {
             </div>
 
             {parentsGuide && (
-              <div className="p-6 md:p-8 border-t border-gray-800">
+              <div className="px-6 md:px-8 pt-4 pb-6 md:pb-8 border-t border-gray-800">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-white">IMDB Parents Guide</h2>
                   {parentsGuide.link && (
