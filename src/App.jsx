@@ -55,7 +55,7 @@ function App() {
 
   if (isCheckingAuth) {
     return (
-      <div className="fixed inset-0 bg-gray-950 flex items-center justify-center overflow-hidden">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-gray-400">Loading...</div>
       </div>
     );
@@ -67,8 +67,30 @@ function App() {
 
   const hasContent = movies.length > 0 || error || (hasSearched && !isLoading);
 
+  // Lock body scroll when there's no content to scroll
+  useEffect(() => {
+    if (!hasContent) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, [hasContent]);
+
   return (
-    <div className={`bg-gray-950 ${hasContent ? 'min-h-screen' : 'fixed inset-0 overflow-hidden'}`}>
+    <div className="bg-gray-950 min-h-screen">
       <header className="py-12 px-4 bg-gradient-to-b from-gray-900 to-gray-950">
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">

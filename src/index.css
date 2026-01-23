@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
-html, body {
-  margin: 0;
-  overflow-x: hidden;
+html {
+  background-color: #030712; /* gray-950 */
 }
 
-/* Prevent pull-to-refresh and overscroll on mobile */
 body {
+  margin: 0;
+  background-color: #030712; /* gray-950 */
   overscroll-behavior: none;
 }
