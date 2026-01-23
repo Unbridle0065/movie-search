@@ -71,6 +71,27 @@ export default function MovieDetails({ imdbId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Handle browser back button to close modal instead of exiting app
+  useEffect(() => {
+    // Push a state so back button has somewhere to go
+    window.history.pushState({ modal: true }, '');
+
+    const handlePopState = () => {
+      onClose();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [onClose]);
+
+  // Use history.back() for consistent behavior with hardware back button
+  const handleBack = () => {
+    window.history.back();
+  };
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -114,7 +135,7 @@ export default function MovieDetails({ imdbId, onClose }) {
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
         <div className="bg-gray-900 p-8 rounded-xl max-w-md">
           <p className="text-red-400 mb-4">{error || 'Movie not found'}</p>
-          <button onClick={onClose} className="text-blue-400 hover:text-blue-300">
+          <button onClick={handleBack} className="text-blue-400 hover:text-blue-300">
             Go back
           </button>
         </div>
@@ -134,7 +155,7 @@ export default function MovieDetails({ imdbId, onClose }) {
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <button
-            onClick={onClose}
+            onClick={handleBack}
             className="mb-6 ml-auto flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
