@@ -55,7 +55,7 @@ function App() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="bg-gray-950 flex items-center justify-center" style={{ minHeight: '100dvh' }}>
         <div className="text-gray-400">Loading...</div>
       </div>
     );
@@ -66,7 +66,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="bg-gray-950" style={{ minHeight: '100dvh' }}>
       <header className="py-12 px-4 bg-gradient-to-b from-gray-900 to-gray-950">
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">

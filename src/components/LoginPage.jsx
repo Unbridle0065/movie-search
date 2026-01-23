@@ -34,7 +34,7 @@ export default function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+    <div className="bg-gray-950 flex items-center justify-center p-4" style={{ minHeight: '100dvh' }}>
       <div className="w-full max-w-md">
         <h1 className="text-3xl font-bold text-white text-center mb-8">Movie Search</h1>
 
