@@ -2,6 +2,10 @@
 
 html, body {
   margin: 0;
-  min-height: 100dvh;
   overflow-x: hidden;
+}
+
+/* Prevent pull-to-refresh and overscroll on mobile */
+body {
+  overscroll-behavior: none;
 }
