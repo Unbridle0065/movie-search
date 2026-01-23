@@ -8,6 +8,7 @@ import { dirname, join } from 'path';
 import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 import { fetchImdbRating } from './imdbRating.js';
+import { searchImdb } from './imdbSearch.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -92,7 +93,7 @@ app.get('/api/auth/check', (req, res) => {
   res.json({ authenticated: !!req.session?.authenticated });
 });
 
-// Search movies by title
+// Search movies by title using IMDB GraphQL API
 app.get('/api/search', requireAuth, async (req, res) => {
   const query = req.query.q;
   if (!query) {
@@ -100,50 +101,15 @@ app.get('/api/search', requireAuth, async (req, res) => {
   }
 
   try {
-    // Run both search (s) and exact title match (t) in parallel
-    // The search endpoint may miss exact matches that the title endpoint finds
-    const [searchResponse, titleResponse] = await Promise.all([
-      fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(query)}&type=movie`),
-      fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${encodeURIComponent(query)}&type=movie`)
-    ]);
-
-    const [searchData, titleData] = await Promise.all([
-      searchResponse.json(),
-      titleResponse.json()
-    ]);
-
-    // Deduplicate results by IMDB ID
-    const seen = new Set();
-    const results = [];
-
-    // Add exact title match first if found (prioritize exact matches)
-    if (titleData.Response === 'True' && titleData.imdbID) {
-      seen.add(titleData.imdbID);
-      results.push({
-        Title: titleData.Title,
-        Year: titleData.Year,
-        imdbID: titleData.imdbID,
-        Type: titleData.Type,
-        Poster: titleData.Poster
-      });
-    }
-
-    // Add search results, skipping duplicates
-    if (searchData.Response === 'True' && searchData.Search) {
-      for (const movie of searchData.Search) {
-        if (!seen.has(movie.imdbID)) {
-          seen.add(movie.imdbID);
-          results.push(movie);
-        }
-      }
-    }
+    const results = await searchImdb(query);
 
     if (results.length === 0) {
-      return res.json({ results: [], error: searchData.Error || 'Movie not found!' });
+      return res.json({ results: [], error: 'Movie not found!' });
     }
 
     res.json({ results });
   } catch (error) {
+    console.error('IMDB search error:', error);
     res.status(500).json({ error: 'Failed to search movies' });
   }
 });
