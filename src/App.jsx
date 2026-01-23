@@ -65,24 +65,6 @@ function App() {
     return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
   }
 
-  const hasContent = movies.length > 0 || error || (hasSearched && !isLoading);
-
-  // Lock body scroll when there's no content to scroll
-  useEffect(() => {
-    if (!hasContent) {
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    };
-  }, [hasContent]);
-
   return (
     <div className="bg-gray-950 min-h-screen">
       <header className="py-12 px-4 bg-gradient-to-b from-gray-900 to-gray-950">
