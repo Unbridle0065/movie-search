@@ -36,7 +36,10 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white text-center mb-8">Movie Search</h1>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Movie Search</h1>
+          <p className="text-gray-400">Search movies and view ratings & parental guidance</p>
+        </div>
 
         <form onSubmit={handleSubmit} className="bg-gray-900 rounded-xl p-8 shadow-xl">
           <div className="mb-6">
