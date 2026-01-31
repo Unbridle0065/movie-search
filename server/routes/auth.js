@@ -6,6 +6,15 @@ import * as Invite from '../models/invite.js';
 
 export const authRouter = Router();
 
+// Strict input validation helper - ensures value is a non-empty string
+function isString(value) {
+  return typeof value === 'string';
+}
+
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.length > 0;
+}
+
 // Per-account lockout tracking (in-memory)
 const accountLockouts = new Map(); // username -> { attempts: number, lockedUntil: Date | null }
 const MAX_FAILED_ATTEMPTS = 5;
@@ -71,7 +80,8 @@ const loginLimiter = rateLimit({
 authRouter.post('/invite/validate', validateLimiter, (req, res) => {
   const { token } = req.body;
 
-  if (!token) {
+  // Strict type validation - prevent object/array injection
+  if (!isNonEmptyString(token)) {
     return res.status(400).json({ error: 'Token required' });
   }
 
@@ -83,17 +93,21 @@ authRouter.post('/invite/validate', validateLimiter, (req, res) => {
 authRouter.post('/signup', signupLimiter, async (req, res) => {
   const { token, username, email, password } = req.body;
 
-  // Validate inputs
-  if (!token) {
+  // Strict type validation - prevent object/array injection
+  if (!isNonEmptyString(token)) {
     return res.status(400).json({ error: 'Invite token required' });
   }
 
-  if (!User.isValidUsername(username)) {
+  if (!isString(username) || !User.isValidUsername(username)) {
     return res.status(400).json({ error: 'Username must be 3-30 alphanumeric characters or underscores' });
   }
 
-  if (!User.isValidEmail(email)) {
+  if (!isString(email) || !User.isValidEmail(email)) {
     return res.status(400).json({ error: 'Invalid email format' });
+  }
+
+  if (!isString(password)) {
+    return res.status(400).json({ error: 'Invalid password format' });
   }
 
   const passwordCheck = User.isValidPassword(password);
@@ -161,7 +175,8 @@ authRouter.post('/signup', signupLimiter, async (req, res) => {
 authRouter.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password) {
+  // Strict type validation - prevent object/array injection
+  if (!isNonEmptyString(username) || !isNonEmptyString(password)) {
     return res.status(400).json({ error: 'Username and password required' });
   }
 

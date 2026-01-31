@@ -4,6 +4,11 @@ import * as User from '../models/user.js';
 
 export const adminRouter = Router();
 
+// Strict type validation helper
+function isString(value) {
+  return typeof value === 'string';
+}
+
 // Middleware to require admin - verifies against database on each request
 const requireAdmin = (req, res, next) => {
   if (!req.session?.authenticated || !req.session?.userId) {
@@ -31,13 +36,13 @@ adminRouter.post('/invites', (req, res) => {
     return res.status(400).json({ error: 'maxUses must be between 1 and 100' });
   }
 
-  // Validate expiresIn format
-  if (!/^\d+[hdm]$/.test(expiresIn)) {
+  // Validate expiresIn format (must be string)
+  if (!isString(expiresIn) || !/^\d+[hdm]$/.test(expiresIn)) {
     return res.status(400).json({ error: 'Invalid expiration format. Use format like "24h", "7d", or "1m"' });
   }
 
-  // Validate email (required)
-  if (!User.isValidEmail(emailAllowed)) {
+  // Validate email (required, must be string)
+  if (!isString(emailAllowed) || !User.isValidEmail(emailAllowed)) {
     return res.status(400).json({ error: 'Valid email is required' });
   }
 
