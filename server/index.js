@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
@@ -43,6 +44,22 @@ app.set('trust proxy', 1);
 
 // Security hardening
 app.disable('x-powered-by');
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https://m.media-amazon.com", "https://images.rottentomatoes.com"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false // Allow loading images from external sources
+}));
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'https://movies.nuttracker.net',
   credentials: true
