@@ -58,17 +58,23 @@ export function isValidEmail(email) {
 }
 
 export function isValidPassword(password) {
+  const missing = [];
+
   if (typeof password !== 'string' || password.length < 8) {
-    return { valid: false, reason: 'Password must be at least 8 characters' };
+    missing.push('at least 8 characters');
   }
-  if (!/[a-z]/.test(password)) {
-    return { valid: false, reason: 'Password must contain a lowercase letter' };
+  if (typeof password === 'string' && !/[a-z]/.test(password)) {
+    missing.push('a lowercase letter');
   }
-  if (!/[A-Z]/.test(password)) {
-    return { valid: false, reason: 'Password must contain an uppercase letter' };
+  if (typeof password === 'string' && !/[A-Z]/.test(password)) {
+    missing.push('an uppercase letter');
   }
-  if (!/[0-9]/.test(password)) {
-    return { valid: false, reason: 'Password must contain a number' };
+  if (typeof password === 'string' && !/[0-9]/.test(password)) {
+    missing.push('a number');
+  }
+
+  if (missing.length > 0) {
+    return { valid: false, reason: `Password must contain ${missing.join(' and ')}` };
   }
   return { valid: true };
 }
