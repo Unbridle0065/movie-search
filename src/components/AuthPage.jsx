@@ -250,7 +250,7 @@ export default function AuthPage({ onLogin, initialToken }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              placeholder={mode === 'signup' ? '8+ chars, uppercase, lowercase, number' : 'Enter password'}
+              placeholder={mode === 'signup' ? 'Create password (8+ characters)' : 'Enter password'}
               required
               minLength={mode === 'signup' ? 8 : undefined}
             />
