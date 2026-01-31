@@ -86,7 +86,7 @@ adminRouter.get('/invites', (req, res) => {
   }
 });
 
-// Revoke invite
+// Revoke or delete invite
 adminRouter.delete('/invites/:id', (req, res) => {
   const inviteId = parseInt(req.params.id);
 
@@ -100,10 +100,16 @@ adminRouter.delete('/invites/:id', (req, res) => {
   }
 
   try {
-    Invite.revokeInvite(inviteId);
-    res.json({ success: true });
+    // If already revoked, permanently delete; otherwise just revoke
+    if (invite.revoked) {
+      Invite.deleteInvite(inviteId);
+      res.json({ success: true, deleted: true });
+    } else {
+      Invite.revokeInvite(inviteId);
+      res.json({ success: true, revoked: true });
+    }
   } catch (error) {
-    console.error('Revoke invite error:', error);
-    res.status(500).json({ error: 'Failed to revoke invite' });
+    console.error('Revoke/delete invite error:', error);
+    res.status(500).json({ error: 'Failed to process invite' });
   }
 });

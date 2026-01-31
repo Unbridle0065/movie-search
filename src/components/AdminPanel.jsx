@@ -103,6 +103,30 @@ export default function AdminPanel({ onClose }) {
     }
   }
 
+  async function handleDelete(inviteId) {
+    if (!confirm('Are you sure you want to permanently delete this invite?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/invites/${inviteId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        fetchInvites();
+        setSuccess('Invite deleted');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to delete invite');
+      }
+    } catch (_err) {
+      setError('Failed to delete invite');
+    }
+  }
+
   function formatDate(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
@@ -255,6 +279,14 @@ export default function AdminPanel({ onClose }) {
                           className="px-3 py-1 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded transition-colors text-sm"
                         >
                           Revoke
+                        </button>
+                      )}
+                      {invite.status === 'revoked' && (
+                        <button
+                          onClick={() => handleDelete(invite.id)}
+                          className="px-3 py-1 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded transition-colors text-sm"
+                        >
+                          Delete
                         </button>
                       )}
                     </div>

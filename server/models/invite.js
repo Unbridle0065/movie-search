@@ -124,3 +124,7 @@ export function revokeInvite(inviteId) {
 export function getInviteById(inviteId) {
   return db.prepare('SELECT * FROM invites WHERE id = ?').get(inviteId);
 }
+
+export function deleteInvite(inviteId) {
+  db.prepare('DELETE FROM invites WHERE id = ?').run(inviteId);
+}
