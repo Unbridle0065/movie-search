@@ -66,6 +66,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Reject non-JSON content types for POST/PUT/PATCH requests
+app.use('/api', (req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
+    if (!req.is('application/json')) {
+      return res.status(415).json({ error: 'Unsupported Media Type' });
+    }
+  }
+  next();
+});
+
 // Session middleware
 app.use(session({
   secret: SESSION_SECRET,
