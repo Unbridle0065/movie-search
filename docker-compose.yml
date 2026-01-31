@@ -9,4 +9,9 @@ services:
       - AUTH_USER=${AUTH_USER}
       - AUTH_PASS=${AUTH_PASS}
       - SESSION_SECRET=${SESSION_SECRET}
+    volumes:
+      - movie-data:/app/data
     restart: unless-stopped
+
+volumes:
+  movie-data:

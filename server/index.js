@@ -9,9 +9,31 @@ import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 import { fetchImdbRating } from './imdbRating.js';
 import { searchImdb } from './imdbSearch.js';
+import { initDatabase, migrateFromEnvAuth } from './db/index.js';
+import { authRouter } from './routes/auth.js';
+import { adminRouter } from './routes/admin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Initialize database
+initDatabase();
+
+// Validate required environment variables
+const OMDB_API_KEY = process.env.OMDB_API_KEY;
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+if (!SESSION_SECRET) {
+  console.error('Missing SESSION_SECRET environment variable');
+  console.error('Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  process.exit(1);
+}
+
+if (!OMDB_API_KEY) {
+  console.error('Missing OMDB_API_KEY environment variable');
+  console.error('Get a free key at: https://www.omdbapi.com/apikey.aspx');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,7 +51,7 @@ app.use(express.json());
 
 // Session middleware
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret-change-me',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -57,41 +79,15 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// Stricter rate limiting for login (5 attempts per 15 minutes)
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { error: 'Too many login attempts, please try again later' }
-});
-
 // Serve static frontend files in production
 app.use(express.static(join(__dirname, '../dist')));
 
-const OMDB_API_KEY = process.env.OMDB_API_KEY;
+// Auth and admin routes
+app.use('/api', authRouter);
+app.use('/api/admin', adminRouter);
 
-if (!OMDB_API_KEY) {
-  console.error('Missing OMDB_API_KEY environment variable');
-  console.error('Get a free key at: https://www.omdbapi.com/apikey.aspx');
-  process.exit(1);
-}
-
-// Auth endpoints
-app.post('/api/login', loginLimiter, (req, res) => {
-  const { username, password } = req.body;
-  const validUser = process.env.AUTH_USER || 'admin';
-  const validPass = process.env.AUTH_PASS || 'changeme';
-
-  if (username === validUser && password === validPass) {
-    req.session.authenticated = true;
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
-  }
-});
-
-app.get('/api/auth/check', (req, res) => {
-  res.json({ authenticated: !!req.session?.authenticated });
-});
+// Migrate existing env var user to database (runs once)
+migrateFromEnvAuth().catch(err => console.error('Migration error:', err));
 
 // Search movies by title using IMDB GraphQL API
 app.get('/api/search', requireAuth, async (req, res) => {
@@ -168,7 +164,7 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
         url: rtScores?.url || null
       }
     });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to fetch movie details' });
   }
 });
