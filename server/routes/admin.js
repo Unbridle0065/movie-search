@@ -36,11 +36,16 @@ adminRouter.post('/invites', (req, res) => {
     return res.status(400).json({ error: 'Invalid expiration format. Use format like "24h", "7d", or "1m"' });
   }
 
+  // Validate email (required)
+  if (!User.isValidEmail(emailAllowed)) {
+    return res.status(400).json({ error: 'Valid email is required' });
+  }
+
   try {
     const invite = Invite.createInvite({
       maxUses,
       expiresIn,
-      emailAllowed: emailAllowed || null,
+      emailAllowed,
       createdBy: req.session.userId
     });
 

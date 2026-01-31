@@ -165,7 +165,7 @@ export default function AdminPanel({ onClose }) {
 
               <div>
                 <label className="block text-gray-400 text-sm mb-2">
-                  Restrict to Email <span className="text-gray-600">(optional)</span>
+                  Email
                 </label>
                 <input
                   type="email"
@@ -173,6 +173,7 @@ export default function AdminPanel({ onClose }) {
                   onChange={(e) => setEmailAllowed(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                   placeholder="user@example.com"
+                  required
                 />
               </div>
 
