@@ -222,7 +222,7 @@ export default function AuthPage({ onLogin, initialToken }) {
           {mode === 'signup' && (
             <div className="mb-6">
               <label htmlFor="email" className="block text-gray-400 text-sm mb-2">
-                Email {!inviteInfo?.emailRequired && <span className="text-gray-600">(optional)</span>}
+                Email
               </label>
               <input
                 id="email"
@@ -231,7 +231,7 @@ export default function AuthPage({ onLogin, initialToken }) {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
                 placeholder="Enter email"
-                required={!!inviteInfo?.emailRequired}
+                required
                 disabled={!!inviteInfo?.emailRequired}
               />
               {inviteInfo?.emailRequired && (

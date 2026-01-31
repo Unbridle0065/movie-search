@@ -52,7 +52,7 @@ export function isValidUsername(username) {
 }
 
 export function isValidEmail(email) {
-  if (!email) return true; // Email is optional
+  if (!email) return false; // Email is required
   return typeof email === 'string' &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
