@@ -46,6 +46,32 @@ export async function fetchTrendingMovies(accessToken, timeWindow = 'week', page
   };
 }
 
+export async function fetchTmdbPosterByImdbId(accessToken, imdbId) {
+  try {
+    const response = await fetch(`${TMDB_BASE_URL}/find/${imdbId}?external_source=imdb_id`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const movie = data.movie_results?.[0];
+
+    if (movie?.poster_path) {
+      return `${TMDB_IMAGE_BASE}${movie.poster_path}`;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Failed to fetch TMDB poster for ${imdbId}:`, error);
+    return null;
+  }
+}
+
 async function fetchImdbId(accessToken, tmdbId) {
   try {
     const response = await fetch(`${TMDB_BASE_URL}/movie/${tmdbId}/external_ids`, {

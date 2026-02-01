@@ -10,7 +10,7 @@ import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 import { fetchImdbRating } from './imdbRating.js';
 import { searchImdb } from './imdbSearch.js';
-import { fetchTrendingMovies } from './tmdb.js';
+import { fetchTrendingMovies, fetchTmdbPosterByImdbId } from './tmdb.js';
 import { initDatabase, migrateFromEnvAuth } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
@@ -140,7 +140,18 @@ app.get('/api/search', requireAuth, async (req, res) => {
       return res.json({ results: [], error: 'Movie not found!' });
     }
 
-    res.json({ results });
+    // Fetch TMDB posters in parallel for all results
+    const resultsWithPosters = await Promise.all(
+      results.map(async (movie) => {
+        const tmdbPoster = await fetchTmdbPosterByImdbId(TMDB_ACCESS_TOKEN, movie.imdbID);
+        return {
+          ...movie,
+          Poster: tmdbPoster || movie.Poster
+        };
+      })
+    );
+
+    res.json({ results: resultsWithPosters });
   } catch (error) {
     console.error('IMDB search error:', error);
     res.status(500).json({ error: 'Failed to search movies' });

@@ -228,6 +228,11 @@ function App() {
     setSelectedMoviePoster(poster);
   }
 
+  function handleSearchMovieClick(imdbId) {
+    const movie = movies.find(m => m.imdbID === imdbId);
+    handleMovieClick(imdbId, movie?.Poster);
+  }
+
   function handleTrendingMovieClick(imdbId) {
     const movie = trendingMovies.find(m => m.imdbID === imdbId);
     handleMovieClick(imdbId, movie?.Poster);
@@ -310,7 +315,7 @@ function App() {
               </div>
             )}
 
-            <MovieGrid movies={movies} onMovieClick={handleMovieClick} />
+            <MovieGrid movies={movies} onMovieClick={handleSearchMovieClick} />
           </>
         ) : activeView === 'trending' ? (
           <TrendingView
