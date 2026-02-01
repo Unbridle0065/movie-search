@@ -128,7 +128,9 @@ export default function AdminPanel({ onClose }) {
   }
 
   function formatDate(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    // Handle SQLite datetime format (no timezone) by appending Z for UTC
+    const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+    return new Date(normalized).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
