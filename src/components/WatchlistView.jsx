@@ -56,6 +56,7 @@ export default function WatchlistView({
               <img
                 src={movie.poster}
                 alt={movie.title}
+                referrerPolicy="no-referrer"
                 className="w-12 h-[72px] object-cover rounded flex-shrink-0"
               />
             ) : (
