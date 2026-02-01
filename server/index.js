@@ -13,6 +13,7 @@ import { searchImdb } from './imdbSearch.js';
 import { initDatabase, migrateFromEnvAuth } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
+import { watchlistRouter } from './routes/watchlist.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -109,9 +110,10 @@ app.use('/api/', apiLimiter);
 // Serve static frontend files in production
 app.use(express.static(join(__dirname, '../dist')));
 
-// Auth and admin routes
+// Auth, admin, and watchlist routes
 app.use('/api', authRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/watchlist', watchlistRouter);
 
 // Migrate existing env var user to database (runs once)
 migrateFromEnvAuth().catch(err => console.error('Migration error:', err));
