@@ -201,6 +201,7 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
                   <img
                     src={posterUrl}
                     alt={movie.Title}
+                    referrerPolicy="no-referrer"
                     className="w-full h-auto"
                   />
                 ) : (
