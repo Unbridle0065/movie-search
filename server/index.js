@@ -10,6 +10,7 @@ import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 import { fetchImdbRating } from './imdbRating.js';
 import { searchImdb } from './imdbSearch.js';
+import { fetchTrendingMovies } from './tmdb.js';
 import { initDatabase, migrateFromEnvAuth } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
@@ -37,6 +38,13 @@ if (!OMDB_API_KEY) {
   process.exit(1);
 }
 
+const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
+if (!TMDB_ACCESS_TOKEN) {
+  console.error('Missing TMDB_ACCESS_TOKEN environment variable');
+  console.error('Get one at: https://www.themoviedb.org/settings/api');
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -51,7 +59,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https://m.media-amazon.com", "https://images.rottentomatoes.com"],
+      imgSrc: ["'self'", "data:", "https://m.media-amazon.com", "https://images.rottentomatoes.com", "https://image.tmdb.org"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
@@ -213,6 +221,19 @@ app.get('/api/parents-guide/:imdbId', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Parents guide error:', error);
     res.status(500).json({ error: 'Failed to fetch parents guide' });
+  }
+});
+
+// Get trending movies from TMDB
+app.get('/api/trending', requireAuth, async (req, res) => {
+  try {
+    const page = Math.min(Math.max(parseInt(req.query.page) || 1, 1), 500);
+    const timeWindow = req.query.time === 'day' ? 'day' : 'week';
+    const data = await fetchTrendingMovies(TMDB_ACCESS_TOKEN, timeWindow, page);
+    res.json(data);
+  } catch (error) {
+    console.error('Trending fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch trending movies' });
   }
 });
 

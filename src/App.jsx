@@ -6,6 +6,7 @@ import AuthPage from './components/AuthPage';
 import AdminPanel from './components/AdminPanel';
 import BottomNav from './components/BottomNav';
 import WatchlistView from './components/WatchlistView';
+import TrendingView from './components/TrendingView';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,6 +16,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedMovieId, setSelectedMovieId] = useState(null);
+  const [selectedMoviePoster, setSelectedMoviePoster] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [inviteToken, setInviteToken] = useState(null);
@@ -23,6 +25,11 @@ function App() {
   const [watchlistMovies, setWatchlistMovies] = useState([]);
   const [watchlistSort, setWatchlistSort] = useState({ by: 'added_at', order: 'desc' });
   const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [trendingMovies, setTrendingMovies] = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [trendingPage, setTrendingPage] = useState(1);
+  const [trendingHasMore, setTrendingHasMore] = useState(true);
+  const [trendingTimeWindow, setTrendingTimeWindow] = useState('day');
 
   async function fetchWatchlistIds() {
     try {
@@ -181,10 +188,62 @@ function App() {
     return <AuthPage onLogin={handleLogin} initialToken={inviteToken} />;
   }
 
+  async function fetchTrending(page = 1, timeWindow = trendingTimeWindow, append = false) {
+    setTrendingLoading(true);
+    try {
+      const response = await fetch(`/api/trending?page=${page}&time=${timeWindow}`, { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (append) {
+          setTrendingMovies(prev => [...prev, ...(data.results || [])]);
+        } else {
+          setTrendingMovies(data.results || []);
+        }
+        setTrendingPage(data.page);
+        setTrendingHasMore(data.page < data.totalPages);
+      }
+    } catch (err) {
+      console.error('Failed to fetch trending:', err);
+    } finally {
+      setTrendingLoading(false);
+    }
+  }
+
+  function loadMoreTrending() {
+    if (!trendingLoading && trendingHasMore) {
+      fetchTrending(trendingPage + 1, trendingTimeWindow, true);
+    }
+  }
+
+  function handleTimeWindowChange(timeWindow) {
+    setTrendingTimeWindow(timeWindow);
+    setTrendingMovies([]);
+    setTrendingPage(1);
+    setTrendingHasMore(true);
+    fetchTrending(1, timeWindow, false);
+  }
+
+  function handleMovieClick(imdbId, poster = null) {
+    setSelectedMovieId(imdbId);
+    setSelectedMoviePoster(poster);
+  }
+
+  function handleTrendingMovieClick(imdbId) {
+    const movie = trendingMovies.find(m => m.imdbID === imdbId);
+    handleMovieClick(imdbId, movie?.Poster);
+  }
+
+  function handleWatchlistMovieClick(imdbId) {
+    const movie = watchlistMovies.find(m => m.imdb_id === imdbId);
+    handleMovieClick(imdbId, movie?.poster);
+  }
+
   function handleViewChange(view) {
     setActiveView(view);
     if (view === 'watchlist') {
       fetchWatchlistWithSort(watchlistSort.by, watchlistSort.order);
+    } else if (view === 'trending' && trendingMovies.length === 0) {
+      fetchTrending(1, false);
     }
   }
 
@@ -251,12 +310,22 @@ function App() {
               </div>
             )}
 
-            <MovieGrid movies={movies} onMovieClick={setSelectedMovieId} />
+            <MovieGrid movies={movies} onMovieClick={handleMovieClick} />
           </>
+        ) : activeView === 'trending' ? (
+          <TrendingView
+            movies={trendingMovies}
+            onMovieClick={handleTrendingMovieClick}
+            isLoading={trendingLoading}
+            hasMore={trendingHasMore}
+            onLoadMore={loadMoreTrending}
+            timeWindow={trendingTimeWindow}
+            onTimeWindowChange={handleTimeWindowChange}
+          />
         ) : (
           <WatchlistView
             movies={watchlistMovies}
-            onMovieClick={setSelectedMovieId}
+            onMovieClick={handleWatchlistMovieClick}
             sortBy={watchlistSort.by}
             sortOrder={watchlistSort.order}
             onSortChange={handleSortChange}
@@ -268,7 +337,8 @@ function App() {
       {selectedMovieId && (
         <MovieDetails
           imdbId={selectedMovieId}
-          onClose={() => setSelectedMovieId(null)}
+          fallbackPoster={selectedMoviePoster}
+          onClose={() => { setSelectedMovieId(null); setSelectedMoviePoster(null); }}
           isInWatchlist={watchlistIds.has(selectedMovieId)}
           onToggleWatchlist={toggleWatchlist}
         />

@@ -65,7 +65,7 @@ function ParentsGuideSection({ category, imdbLink }) {
   );
 }
 
-export default function MovieDetails({ imdbId, onClose, isInWatchlist, onToggleWatchlist }) {
+export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatchlist, onToggleWatchlist }) {
   const [movie, setMovie] = useState(null);
   const [parentsGuide, setParentsGuide] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -143,7 +143,9 @@ export default function MovieDetails({ imdbId, onClose, isInWatchlist, onToggleW
     );
   }
 
-  const hasPoster = movie.Poster && movie.Poster !== 'N/A';
+  // Prefer fallback poster (from TMDB) for consistency with what was shown in the grid
+  const posterUrl = (fallbackPoster && fallbackPoster !== 'N/A') ? fallbackPoster : movie.Poster;
+  const hasPoster = posterUrl && posterUrl !== 'N/A';
 
   // Filter out non-category keys from parentsGuide
   const guideCategories = parentsGuide
@@ -197,7 +199,7 @@ export default function MovieDetails({ imdbId, onClose, isInWatchlist, onToggleW
               <div className="md:w-1/3 flex-shrink-0">
                 {hasPoster ? (
                   <img
-                    src={movie.Poster}
+                    src={posterUrl}
                     alt={movie.Title}
                     className="w-full h-auto"
                   />
