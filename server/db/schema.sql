@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS invites (
   email_allowed TEXT,
   created_by INTEGER REFERENCES users(id),
   created_at TEXT DEFAULT (datetime('now')),
-  revoked INTEGER DEFAULT 0
+  revoked INTEGER DEFAULT 0,
+  used_at TEXT
 );
 
 -- Watchlist table
