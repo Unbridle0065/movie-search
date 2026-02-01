@@ -217,7 +217,7 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
               <div className="p-6 md:p-8 flex-1">
                 <h1 className="text-3xl font-bold text-white mb-2">{movie.Title}</h1>
                 <p className="text-gray-400 mb-4">
-                  {movie.Year} &bull; {movie.Runtime} &bull; {movie.Rated}
+                  {movie.Year} &bull; {movie.Runtime} &bull; {movie.Rated} &bull; {movie.Genre}
                 </p>
 
                 <p className="text-gray-300 mb-6 leading-relaxed">{movie.Plot}</p>
@@ -225,11 +225,19 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-gray-800 rounded-lg p-4">
                     <div className="text-sm text-gray-400 mb-1">Director</div>
-                    <div className="text-white font-medium">{movie.Director}</div>
+                    <div className="text-white font-medium">
+                      {movie.Director?.split(', ').map((dir, i) => (
+                        <div key={i}>{dir}</div>
+                      ))}
+                    </div>
                   </div>
                   <div className="bg-gray-800 rounded-lg p-4">
-                    <div className="text-sm text-gray-400 mb-1">Genre</div>
-                    <div className="text-white font-medium">{movie.Genre}</div>
+                    <div className="text-sm text-gray-400 mb-1">Actors</div>
+                    <div className="text-white font-medium">
+                      {movie.Actors?.split(', ').slice(0, 3).map((actor, i) => (
+                        <div key={i}>{actor}</div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
