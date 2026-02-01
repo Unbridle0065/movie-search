@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import session from 'express-session';
+import BetterSqlite3Store from 'better-sqlite3-session-store';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -11,7 +12,7 @@ import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 import { fetchImdbRating } from './imdbRating.js';
 import { searchImdb } from './imdbSearch.js';
 import { fetchTrendingMovies, fetchTmdbPosterByImdbId } from './tmdb.js';
-import { initDatabase, migrateFromEnvAuth } from './db/index.js';
+import { initDatabase, migrateFromEnvAuth, db } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { watchlistRouter } from './routes/watchlist.js';
@@ -85,8 +86,16 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// Session middleware
+// Session middleware with SQLite store for persistence
+const SqliteStore = BetterSqlite3Store(session);
 app.use(session({
+  store: new SqliteStore({
+    client: db,
+    expired: {
+      clear: true,
+      intervalMs: 900000  // Clear expired sessions every 15 min
+    }
+  }),
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
