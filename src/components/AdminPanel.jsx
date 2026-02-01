@@ -272,7 +272,9 @@ export default function AdminPanel({ onClose }) {
                           </p>
                         )}
                         <p className="text-xs text-gray-500">
-                          Created {formatDate(invite.created_at)} &bull; Expires {formatDate(invite.expires_at)}
+                          Created {formatDate(invite.created_at)} &bull; {invite.status === 'exhausted' && invite.used_at
+                            ? `Accepted ${formatDate(invite.used_at)}`
+                            : `Expires ${formatDate(invite.expires_at)}`}
                         </p>
                       </div>
                       {invite.status === 'active' && (

@@ -21,6 +21,14 @@ db.pragma('foreign_keys = ON');
 export function initDatabase() {
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
   db.exec(schema);
+
+  // Migration: add used_at column to invites table if it doesn't exist
+  const columns = db.prepare("PRAGMA table_info(invites)").all();
+  if (!columns.some(col => col.name === 'used_at')) {
+    db.exec('ALTER TABLE invites ADD COLUMN used_at TEXT');
+    console.log('Migration: added used_at column to invites table');
+  }
+
   console.log('Database initialized');
 }
 

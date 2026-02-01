@@ -100,11 +100,11 @@ export function getInviteInfo(rawToken) {
 }
 
 export function consumeInvite(inviteId) {
-  db.prepare('UPDATE invites SET uses = uses + 1 WHERE id = ?').run(inviteId);
+  db.prepare("UPDATE invites SET uses = uses + 1, used_at = datetime('now') WHERE id = ?").run(inviteId);
 }
 
 export function listInvites(createdBy = null) {
-  let query = 'SELECT id, expires_at, max_uses, uses, email_allowed, created_at, revoked FROM invites';
+  let query = 'SELECT id, expires_at, max_uses, uses, email_allowed, created_at, revoked, used_at FROM invites';
   let params = [];
 
   if (createdBy !== null) {
