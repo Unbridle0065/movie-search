@@ -1,8 +1,8 @@
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
-// Indian language codes to filter out from trending
-const INDIAN_LANGUAGE_CODES = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu'];
+// Language codes to filter out from trending (Indian + East Asian)
+const FILTERED_LANGUAGE_CODES = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'zh', 'ko', 'ja', 'th'];
 
 export async function fetchTrendingMovies(accessToken, timeWindow = 'week', page = 1) {
   const response = await fetch(`${TMDB_BASE_URL}/trending/movie/${timeWindow}?page=${page}`, {
@@ -20,9 +20,9 @@ export async function fetchTrendingMovies(accessToken, timeWindow = 'week', page
   const movies = data.results || [];
   const totalPages = data.total_pages || 1;
 
-  // Filter out Indian language movies
+  // Filter out non-English regional movies
   const filteredMovies = movies.filter(
-    movie => !INDIAN_LANGUAGE_CODES.includes(movie.original_language)
+    movie => !FILTERED_LANGUAGE_CODES.includes(movie.original_language)
   );
 
   // Fetch IMDB IDs for each movie in parallel
