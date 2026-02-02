@@ -29,7 +29,7 @@ function App() {
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingPage, setTrendingPage] = useState(1);
   const [trendingHasMore, setTrendingHasMore] = useState(true);
-  const [exploreMode, setExploreMode] = useState('day');
+  const [exploreMode, setExploreMode] = useState('week');
   const [exploreGenre, setExploreGenre] = useState('28'); // Default to Action
   const lastTrendingFetchRef = useRef(0);
 

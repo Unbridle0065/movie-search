@@ -73,7 +73,6 @@ export default function ExploreView({ movies, onMovieClick, isLoading, hasMore, 
             onChange={(e) => onModeChange(e.target.value)}
             className="bg-gray-800 text-white text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-blue-500"
           >
-            <option value="day">Trending Today</option>
             <option value="week">Trending This Week</option>
             <option value="popular">Trending This Month</option>
             <option value="genre">Popular By Genre</option>
