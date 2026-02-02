@@ -28,7 +28,7 @@ export default function TrendingView({ movies, onMovieClick, isLoading, hasMore,
   if (isLoading && movies.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-400">Loading trending movies...</div>
+        <div className="text-gray-400">Loading movies...</div>
       </div>
     );
   }
@@ -44,12 +44,13 @@ export default function TrendingView({ movies, onMovieClick, isLoading, hasMore,
         >
           <option value="day">Today</option>
           <option value="week">This Week</option>
+          <option value="popular">This Month</option>
         </select>
       </div>
 
       {movies.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-400">No trending movies available.</p>
+          <p className="text-gray-400">No movies available.</p>
         </div>
       ) : (
         <>

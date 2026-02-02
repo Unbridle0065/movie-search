@@ -11,7 +11,7 @@ import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 import { fetchImdbRating } from './imdbRating.js';
 import { searchImdb } from './imdbSearch.js';
-import { fetchTrendingMovies, fetchTmdbPosterByImdbId } from './tmdb.js';
+import { fetchTrendingMovies, fetchPopularMovies, fetchTmdbPosterByImdbId } from './tmdb.js';
 import { initDatabase, migrateFromEnvAuth, db } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
@@ -244,12 +244,20 @@ app.get('/api/parents-guide/:imdbId', requireAuth, async (req, res) => {
   }
 });
 
-// Get trending movies from TMDB
+// Get trending/popular movies from TMDB
 app.get('/api/trending', requireAuth, async (req, res) => {
   try {
     const page = Math.min(Math.max(parseInt(req.query.page) || 1, 1), 500);
-    const timeWindow = req.query.time === 'day' ? 'day' : 'week';
-    const data = await fetchTrendingMovies(TMDB_ACCESS_TOKEN, timeWindow, page);
+    const time = req.query.time;
+
+    let data;
+    if (time === 'popular') {
+      data = await fetchPopularMovies(TMDB_ACCESS_TOKEN, page);
+    } else {
+      const timeWindow = time === 'day' ? 'day' : 'week';
+      data = await fetchTrendingMovies(TMDB_ACCESS_TOKEN, timeWindow, page);
+    }
+
     res.json(data);
   } catch (error) {
     console.error('Trending fetch error:', error);
