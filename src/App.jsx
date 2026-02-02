@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SearchBar from './components/SearchBar';
 import MovieGrid from './components/MovieGrid';
 import MovieDetails from './components/MovieDetails';
@@ -30,6 +30,7 @@ function App() {
   const [trendingPage, setTrendingPage] = useState(1);
   const [trendingHasMore, setTrendingHasMore] = useState(true);
   const [trendingTimeWindow, setTrendingTimeWindow] = useState('day');
+  const lastTrendingFetchRef = useRef(0);
 
   async function fetchWatchlistIds() {
     try {
@@ -200,7 +201,8 @@ function App() {
           setTrendingMovies(data.results || []);
         }
         setTrendingPage(data.page);
-        setTrendingHasMore(data.page < data.totalPages);
+        // Stop pagination if page returns no results (can happen due to server-side filtering)
+        setTrendingHasMore(data.page < data.totalPages && data.results?.length > 0);
       }
     } catch (err) {
       console.error('Failed to fetch trending:', err);
@@ -210,7 +212,12 @@ function App() {
   }
 
   function loadMoreTrending() {
-    if (!trendingLoading && trendingHasMore) {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastTrendingFetchRef.current;
+    const throttleMs = 1000; // Minimum 1 second between requests
+
+    if (!trendingLoading && trendingHasMore && timeSinceLastFetch >= throttleMs) {
+      lastTrendingFetchRef.current = now;
       fetchTrending(trendingPage + 1, trendingTimeWindow, true);
     }
   }
