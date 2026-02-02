@@ -6,7 +6,7 @@ import AuthPage from './components/AuthPage';
 import AdminPanel from './components/AdminPanel';
 import BottomNav from './components/BottomNav';
 import WatchlistView from './components/WatchlistView';
-import TrendingView from './components/TrendingView';
+import ExploreView from './components/ExploreView';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,7 +29,8 @@ function App() {
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingPage, setTrendingPage] = useState(1);
   const [trendingHasMore, setTrendingHasMore] = useState(true);
-  const [trendingTimeWindow, setTrendingTimeWindow] = useState('day');
+  const [exploreMode, setExploreMode] = useState('day');
+  const [exploreGenre, setExploreGenre] = useState('28'); // Default to Action
   const lastTrendingFetchRef = useRef(0);
 
   async function fetchWatchlistIds() {
@@ -189,10 +190,14 @@ function App() {
     return <AuthPage onLogin={handleLogin} initialToken={inviteToken} />;
   }
 
-  async function fetchTrending(page = 1, timeWindow = trendingTimeWindow, append = false) {
+  async function fetchExplore(page = 1, mode = exploreMode, genre = exploreGenre, append = false) {
     setTrendingLoading(true);
     try {
-      const response = await fetch(`/api/trending?page=${page}&time=${timeWindow}`, { credentials: 'include' });
+      let url = `/api/trending?page=${page}&time=${mode}`;
+      if (mode === 'genre') {
+        url += `&genre=${genre}`;
+      }
+      const response = await fetch(url, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (append) {
@@ -211,23 +216,31 @@ function App() {
     }
   }
 
-  function loadMoreTrending() {
+  function loadMoreExplore() {
     const now = Date.now();
     const timeSinceLastFetch = now - lastTrendingFetchRef.current;
     const throttleMs = 1000; // Minimum 1 second between requests
 
     if (!trendingLoading && trendingHasMore && timeSinceLastFetch >= throttleMs) {
       lastTrendingFetchRef.current = now;
-      fetchTrending(trendingPage + 1, trendingTimeWindow, true);
+      fetchExplore(trendingPage + 1, exploreMode, exploreGenre, true);
     }
   }
 
-  function handleTimeWindowChange(timeWindow) {
-    setTrendingTimeWindow(timeWindow);
+  function handleModeChange(mode) {
+    setExploreMode(mode);
     setTrendingMovies([]);
     setTrendingPage(1);
     setTrendingHasMore(true);
-    fetchTrending(1, timeWindow, false);
+    fetchExplore(1, mode, exploreGenre, false);
+  }
+
+  function handleGenreChange(genre) {
+    setExploreGenre(genre);
+    setTrendingMovies([]);
+    setTrendingPage(1);
+    setTrendingHasMore(true);
+    fetchExplore(1, exploreMode, genre, false);
   }
 
   function handleMovieClick(imdbId, poster = null) {
@@ -255,7 +268,7 @@ function App() {
     if (view === 'watchlist') {
       fetchWatchlistWithSort(watchlistSort.by, watchlistSort.order);
     } else if (view === 'trending' && trendingMovies.length === 0) {
-      fetchTrending(1, false);
+      fetchExplore(1, exploreMode, exploreGenre, false);
     }
   }
 
@@ -325,14 +338,16 @@ function App() {
             <MovieGrid movies={movies} onMovieClick={handleSearchMovieClick} />
           </>
         ) : activeView === 'trending' ? (
-          <TrendingView
+          <ExploreView
             movies={trendingMovies}
             onMovieClick={handleTrendingMovieClick}
             isLoading={trendingLoading}
             hasMore={trendingHasMore}
-            onLoadMore={loadMoreTrending}
-            timeWindow={trendingTimeWindow}
-            onTimeWindowChange={handleTimeWindowChange}
+            onLoadMore={loadMoreExplore}
+            mode={exploreMode}
+            onModeChange={handleModeChange}
+            genre={exploreGenre}
+            onGenreChange={handleGenreChange}
           />
         ) : (
           <WatchlistView

@@ -11,7 +11,7 @@ import { fetchParentsGuide } from './parentsGuide.js';
 import { fetchRottenTomatoesScores } from './rottenTomatoes.js';
 import { fetchImdbRating } from './imdbRating.js';
 import { searchImdb } from './imdbSearch.js';
-import { fetchTrendingMovies, fetchPopularMovies, fetchTmdbPosterByImdbId } from './tmdb.js';
+import { fetchTrendingMovies, fetchPopularMovies, fetchDiscoverMovies, fetchTmdbPosterByImdbId } from './tmdb.js';
 import { initDatabase, migrateFromEnvAuth, db } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
@@ -244,14 +244,17 @@ app.get('/api/parents-guide/:imdbId', requireAuth, async (req, res) => {
   }
 });
 
-// Get trending/popular movies from TMDB
+// Get trending/popular/genre movies from TMDB
 app.get('/api/trending', requireAuth, async (req, res) => {
   try {
     const page = Math.min(Math.max(parseInt(req.query.page) || 1, 1), 500);
     const time = req.query.time;
+    const genre = req.query.genre;
 
     let data;
-    if (time === 'popular') {
+    if (time === 'genre' && genre) {
+      data = await fetchDiscoverMovies(TMDB_ACCESS_TOKEN, genre, page);
+    } else if (time === 'popular') {
       data = await fetchPopularMovies(TMDB_ACCESS_TOKEN, page);
     } else {
       const timeWindow = time === 'day' ? 'day' : 'week';
