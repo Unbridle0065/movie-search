@@ -1,5 +1,8 @@
+import { getPosterUrl } from '../utils/posterUrl';
+
 export default function MovieCard({ movie, onClick }) {
-  const hasPoster = movie.Poster && movie.Poster !== 'N/A';
+  const posterUrl = getPosterUrl(movie.Poster);
+  const hasPoster = posterUrl !== null;
 
   return (
     <button
@@ -9,9 +12,8 @@ export default function MovieCard({ movie, onClick }) {
       <div className="aspect-[2/3] overflow-hidden">
         {hasPoster ? (
           <img
-            src={movie.Poster}
+            src={posterUrl}
             alt={movie.Title}
-            referrerPolicy="no-referrer"
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
         ) : (

@@ -1,3 +1,5 @@
+import { getPosterUrl } from '../utils/posterUrl';
+
 export default function WatchlistView({
   movies,
   onMovieClick,
@@ -46,17 +48,18 @@ export default function WatchlistView({
       </div>
 
       <div className="space-y-3">
-        {movies.map((movie) => (
+        {movies.map((movie) => {
+          const posterUrl = getPosterUrl(movie.poster);
+          return (
           <button
             key={movie.imdb_id}
             onClick={() => onMovieClick(movie.imdb_id)}
             className="w-full flex items-center gap-4 p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-left"
           >
-            {movie.poster && movie.poster !== 'N/A' ? (
+            {posterUrl ? (
               <img
-                src={movie.poster}
+                src={posterUrl}
                 alt={movie.title}
-                referrerPolicy="no-referrer"
                 className="w-12 h-[72px] object-cover rounded flex-shrink-0"
               />
             ) : (
@@ -76,7 +79,7 @@ export default function WatchlistView({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-        ))}
+        );})}
       </div>
     </div>
   );

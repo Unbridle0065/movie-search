@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getPosterUrl } from '../utils/posterUrl';
 
 const SEVERITY_COLORS = {
   'None': 'bg-green-500',
@@ -144,8 +145,9 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
   }
 
   // Prefer fallback poster (from TMDB) for consistency with what was shown in the grid
-  const posterUrl = (fallbackPoster && fallbackPoster !== 'N/A') ? fallbackPoster : movie.Poster;
-  const hasPoster = posterUrl && posterUrl !== 'N/A';
+  const rawPosterUrl = (fallbackPoster && fallbackPoster !== 'N/A') ? fallbackPoster : movie.Poster;
+  const posterUrl = getPosterUrl(rawPosterUrl);
+  const hasPoster = posterUrl !== null;
 
   // Filter out non-category keys from parentsGuide
   const guideCategories = parentsGuide
@@ -201,7 +203,6 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
                   <img
                     src={posterUrl}
                     alt={movie.Title}
-                    referrerPolicy="no-referrer"
                     className="w-full h-auto"
                   />
                 ) : (

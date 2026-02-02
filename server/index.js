@@ -257,6 +257,77 @@ app.get('/api/trending', requireAuth, async (req, res) => {
   }
 });
 
+// Poster image proxy to bypass browser tracking protection
+// This makes third-party CDN images appear as first-party requests
+app.get('/api/poster-proxy', async (req, res) => {
+  const encodedUrl = req.query.url;
+
+  if (!encodedUrl) {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  let url;
+  try {
+    url = decodeURIComponent(encodedUrl);
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL encoding' });
+  }
+
+  // Security: Validate URL is from allowed domains (SSRF prevention)
+  const ALLOWED_DOMAINS = [
+    'm.media-amazon.com',
+    'image.tmdb.org',
+    'images-na.ssl-images-amazon.com'
+  ];
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL format' });
+  }
+
+  if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
+    return res.status(403).json({ error: 'Domain not allowed' });
+  }
+
+  if (parsedUrl.protocol !== 'https:') {
+    return res.status(403).json({ error: 'HTTPS required' });
+  }
+
+  try {
+    const imageResponse = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/webp,image/avif,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+
+    if (!imageResponse.ok) {
+      return res.status(imageResponse.status).json({ error: 'Failed to fetch image' });
+    }
+
+    const contentType = imageResponse.headers.get('content-type');
+
+    if (!contentType || !contentType.startsWith('image/')) {
+      return res.status(400).json({ error: 'Not an image' });
+    }
+
+    res.set({
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2592000',
+      'X-Content-Type-Options': 'nosniff'
+    });
+
+    const buffer = await imageResponse.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Poster proxy error:', error);
+    res.status(500).json({ error: 'Failed to proxy image' });
+  }
+});
+
 // Serve index.html for all other routes (SPA support)
 app.get('/{*splat}', (req, res) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
