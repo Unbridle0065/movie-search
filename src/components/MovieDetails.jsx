@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react';
 import { getPosterUrl } from '../utils/posterUrl';
 
+// Helper functions for RT score freshness
+function parseScore(scoreString) {
+  if (!scoreString) return null;
+  const match = scoreString.match(/^(\d+)%?$/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function isFresh(scoreString) {
+  const score = parseScore(scoreString);
+  return score !== null && score >= 60;
+}
+
 const SEVERITY_COLORS = {
   'None': 'bg-green-500',
   'Mild': 'bg-yellow-500',
@@ -248,20 +260,20 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
                   {(movie.rottenTomatoes?.criticScore || movie.rottenTomatoes?.audienceScore) && (
                     <div className="flex flex-wrap gap-3">
                       {movie.rottenTomatoes?.criticScore && (
-                        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 flex items-center gap-3">
+                        <div className={`${isFresh(movie.rottenTomatoes.criticScore) ? 'bg-red-900/50 border-red-700' : 'bg-green-900/50 border-green-700'} border rounded-lg p-4 flex items-center gap-3`}>
                           <span className="text-3xl">🍅</span>
                           <div>
                             <div className="text-2xl font-bold text-white">{movie.rottenTomatoes.criticScore}</div>
-                            <div className="text-sm text-red-300">Critics</div>
+                            <div className={`text-sm ${isFresh(movie.rottenTomatoes.criticScore) ? 'text-red-300' : 'text-green-300'}`}>Critics</div>
                           </div>
                         </div>
                       )}
                       {movie.rottenTomatoes?.audienceScore && (
-                        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 flex items-center gap-3">
+                        <div className={`${isFresh(movie.rottenTomatoes.audienceScore) ? 'bg-red-900/50 border-red-700' : 'bg-green-900/50 border-green-700'} border rounded-lg p-4 flex items-center gap-3`}>
                           <span className="text-3xl">🍿</span>
                           <div>
                             <div className="text-2xl font-bold text-white">{movie.rottenTomatoes.audienceScore}</div>
-                            <div className="text-sm text-red-300">Audience</div>
+                            <div className={`text-sm ${isFresh(movie.rottenTomatoes.audienceScore) ? 'text-red-300' : 'text-green-300'}`}>Audience</div>
                           </div>
                         </div>
                       )}
