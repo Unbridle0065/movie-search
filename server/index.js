@@ -160,7 +160,12 @@ app.get('/api/search', requireAuth, async (req, res) => {
       })
     );
 
-    res.json({ results: resultsWithPosters });
+    // Filter out incomplete movies (no year or no poster)
+    const filteredResults = resultsWithPosters.filter(
+      movie => movie.Year !== 'N/A' && movie.Poster !== 'N/A'
+    );
+
+    res.json({ results: filteredResults });
   } catch (error) {
     console.error('IMDB search error:', error);
     res.status(500).json({ error: 'Failed to search movies' });
