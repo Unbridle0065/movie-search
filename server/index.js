@@ -186,10 +186,13 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
       return res.status(404).json({ error: data.Error });
     }
 
-    // Fetch Rotten Tomatoes scores and IMDB rating (if needed) in parallel
+    // Fetch Rotten Tomatoes scores and IMDB data (if needed) in parallel
     let rtScores = null;
-    let imdbRating = null;
+    let imdbData = null;
     const needsImdbRating = !data.imdbRating || data.imdbRating === 'N/A';
+    const needsMpaaRating = !data.Rated || data.Rated === 'N/A';
+    const plotTruncated = data.Plot?.endsWith('...');
+    const needsImdbData = needsImdbRating || needsMpaaRating || plotTruncated;
 
     try {
       const [rtResult, imdbResult] = await Promise.all([
@@ -197,13 +200,13 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
           console.error('RT fetch error:', e);
           return null;
         }),
-        needsImdbRating ? fetchImdbRating(req.params.imdbId).catch(e => {
+        needsImdbData ? fetchImdbRating(req.params.imdbId).catch(e => {
           console.error('IMDB rating fetch error:', e);
           return null;
         }) : Promise.resolve(null)
       ]);
       rtScores = rtResult;
-      imdbRating = imdbResult;
+      imdbData = imdbResult;
     } catch (e) {
       console.error('Fetch error:', e);
     }
@@ -211,10 +214,15 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
     // Fallback to OMDb RT score if scraping fails
     const omdbRtRating = data.Ratings?.find(r => r.Source === 'Rotten Tomatoes');
 
+    // Use IMDB plot if OMDb plot is truncated
+    const finalPlot = (plotTruncated && imdbData?.plot) ? imdbData.plot : data.Plot;
+
     res.json({
       ...data,
-      imdbRating: data.imdbRating !== 'N/A' ? data.imdbRating : (imdbRating?.rating?.toString() || 'N/A'),
-      imdbVotes: data.imdbVotes !== 'N/A' ? data.imdbVotes : (imdbRating?.voteCount?.toLocaleString() || 'N/A'),
+      Plot: finalPlot,
+      Rated: data.Rated !== 'N/A' ? data.Rated : (imdbData?.mpaaRating || 'N/A'),
+      imdbRating: data.imdbRating !== 'N/A' ? data.imdbRating : (imdbData?.rating?.toString() || 'N/A'),
+      imdbVotes: data.imdbVotes !== 'N/A' ? data.imdbVotes : (imdbData?.voteCount?.toLocaleString() || 'N/A'),
       rottenTomatoes: {
         criticScore: rtScores?.criticScore || omdbRtRating?.Value || null,
         audienceScore: rtScores?.audienceScore || null,

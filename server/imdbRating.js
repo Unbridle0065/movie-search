@@ -46,13 +46,13 @@ export async function fetchImdbRating(imdbId) {
   // Navigate to the rating data
   const aboveTheFold = nextData?.props?.pageProps?.aboveTheFoldData;
   const ratingsSummary = aboveTheFold?.ratingsSummary;
-
-  if (!ratingsSummary?.aggregateRating) {
-    return null;
-  }
+  const certificate = aboveTheFold?.certificate;
+  const plot = aboveTheFold?.plot?.plotText?.plainText;
 
   return {
-    rating: ratingsSummary.aggregateRating,
-    voteCount: ratingsSummary.voteCount
+    rating: ratingsSummary?.aggregateRating || null,
+    voteCount: ratingsSummary?.voteCount || null,
+    mpaaRating: certificate?.rating || null,
+    plot: plot || null
   };
 }
