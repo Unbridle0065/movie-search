@@ -149,21 +149,27 @@ app.get('/api/search', requireAuth, async (req, res) => {
       return res.json({ results: [], error: 'Movie not found!' });
     }
 
-    // Fetch TMDB posters in parallel for all results
-    const resultsWithPosters = await Promise.all(
+    // Fetch TMDB posters and validate against OMDb in parallel
+    const resultsWithValidation = await Promise.all(
       results.map(async (movie) => {
-        const tmdbPoster = await fetchTmdbPosterByImdbId(TMDB_ACCESS_TOKEN, movie.imdbID);
+        const [tmdbPoster, omdbResponse] = await Promise.all([
+          fetchTmdbPosterByImdbId(TMDB_ACCESS_TOKEN, movie.imdbID),
+          fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${movie.imdbID}`)
+            .then(r => r.json())
+            .catch(() => ({ Response: 'False' }))
+        ]);
         return {
           ...movie,
-          Poster: tmdbPoster || movie.Poster
+          Poster: tmdbPoster || movie.Poster,
+          _omdbValid: omdbResponse.Response === 'True'
         };
       })
     );
 
-    // Filter out incomplete movies (no year or no poster)
-    const filteredResults = resultsWithPosters.filter(
-      movie => movie.Year !== 'N/A' && movie.Poster !== 'N/A'
-    );
+    // Filter out movies not in OMDb or missing year/poster
+    const filteredResults = resultsWithValidation
+      .filter(movie => movie._omdbValid && movie.Year !== 'N/A' && movie.Poster !== 'N/A')
+      .map(({ _omdbValid, ...movie }) => movie);
 
     res.json({ results: filteredResults });
   } catch (error) {
@@ -274,7 +280,22 @@ app.get('/api/trending', requireAuth, async (req, res) => {
       data = await fetchTrendingMovies(TMDB_ACCESS_TOKEN, timeWindow, page);
     }
 
-    res.json(data);
+    // Validate movies against OMDb in parallel
+    const validatedResults = await Promise.all(
+      data.results.map(async (movie) => {
+        const omdbResponse = await fetch(
+          `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${movie.imdbID}`
+        ).then(r => r.json()).catch(() => ({ Response: 'False' }));
+        return { ...movie, _omdbValid: omdbResponse.Response === 'True' };
+      })
+    );
+
+    // Filter out movies not recognized by OMDb
+    const filteredResults = validatedResults
+      .filter(movie => movie._omdbValid)
+      .map(({ _omdbValid, ...movie }) => movie);
+
+    res.json({ ...data, results: filteredResults });
   } catch (error) {
     console.error('Trending fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch trending movies' });
