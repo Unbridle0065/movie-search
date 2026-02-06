@@ -13,6 +13,8 @@ import { fetchImdbRating } from './imdbRating.js';
 import { searchImdb } from './imdbSearch.js';
 import { fetchTrendingMovies, fetchPopularMovies, fetchDiscoverMovies, fetchTmdbPosterByImdbId } from './tmdb.js';
 import { initDatabase, migrateFromEnvAuth, db } from './db/index.js';
+import { initCache, cacheGet, cacheSet, cachePurge, TTL } from './cache.js';
+import { fetchWithTimeout } from './fetchWithTimeout.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { watchlistRouter } from './routes/watchlist.js';
@@ -20,8 +22,10 @@ import { watchlistRouter } from './routes/watchlist.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Initialize database
+// Initialize database and cache
 initDatabase();
+initCache();
+setInterval(cachePurge, 3600000);
 
 // Validate required environment variables
 const OMDB_API_KEY = process.env.OMDB_API_KEY;
@@ -152,16 +156,24 @@ app.get('/api/search', requireAuth, async (req, res) => {
     // Fetch TMDB posters and validate against OMDb in parallel
     const resultsWithValidation = await Promise.all(
       results.map(async (movie) => {
-        const [tmdbPoster, omdbResponse] = await Promise.all([
+        const omdbCacheKey = `omdb:${movie.imdbID}`;
+        let omdbValid = cacheGet(omdbCacheKey);
+
+        const [tmdbPoster] = await Promise.all([
           fetchTmdbPosterByImdbId(TMDB_ACCESS_TOKEN, movie.imdbID),
-          fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${movie.imdbID}`)
-            .then(r => r.json())
-            .catch(() => ({ Response: 'False' }))
+          (async () => {
+            if (omdbValid !== null) return;
+            const omdbResponse = await fetchWithTimeout(
+              `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${movie.imdbID}`
+            ).then(r => r.json()).catch(() => ({ Response: 'False' }));
+            omdbValid = omdbResponse.Response === 'True';
+            cacheSet(omdbCacheKey, omdbValid, TTL.OMDB);
+          })()
         ]);
         return {
           ...movie,
           Poster: tmdbPoster || movie.Poster,
-          _omdbValid: omdbResponse.Response === 'True'
+          _omdbValid: omdbValid
         };
       })
     );
@@ -188,7 +200,7 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
   }
 
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbId}&plot=full`
     );
     const data = await response.json();
@@ -207,14 +219,31 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
 
     try {
       const [rtResult, imdbResult] = await Promise.all([
-        fetchRottenTomatoesScores(data.Title, data.Year).catch(e => {
-          console.error('RT fetch error:', e);
-          return null;
-        }),
-        needsImdbData ? fetchImdbRating(req.params.imdbId).catch(e => {
-          console.error('IMDB rating fetch error:', e);
-          return null;
-        }) : Promise.resolve(null)
+        (async () => {
+          const rtCacheKey = `rt:${imdbId}`;
+          const cachedRt = cacheGet(rtCacheKey);
+          if (cachedRt !== null) return cachedRt;
+          const result = await fetchRottenTomatoesScores(data.Title, data.Year).catch(e => {
+            console.error('RT fetch error:', e);
+            return null;
+          });
+          const ttl = (result && !result.error) ? TTL.RT : TTL.RT_NULL;
+          cacheSet(rtCacheKey, result, ttl);
+          return result;
+        })(),
+        (async () => {
+          if (!needsImdbData) return null;
+          const imdbCacheKey = `imdb_rating:${imdbId}`;
+          const cachedImdb = cacheGet(imdbCacheKey);
+          if (cachedImdb !== null) return cachedImdb;
+          const result = await fetchImdbRating(imdbId).catch(e => {
+            console.error('IMDB rating fetch error:', e);
+            return null;
+          });
+          const ttl = result ? TTL.IMDB_RATING : TTL.IMDB_RATING_NULL;
+          cacheSet(imdbCacheKey, result, ttl);
+          return result;
+        })()
       ]);
       rtScores = rtResult;
       imdbData = imdbResult;
@@ -255,7 +284,15 @@ app.get('/api/parents-guide/:imdbId', requireAuth, async (req, res) => {
   }
 
   try {
+    const pgCacheKey = `parents_guide:${imdbId}`;
+    const cached = cacheGet(pgCacheKey);
+    if (cached !== null) {
+      return res.json(cached);
+    }
     const guide = await fetchParentsGuide(imdbId);
+    if (!guide.error) {
+      cacheSet(pgCacheKey, guide, TTL.PARENTS_GUIDE);
+    }
     res.json(guide);
   } catch (error) {
     console.error('Parents guide error:', error);
@@ -280,13 +317,20 @@ app.get('/api/trending', requireAuth, async (req, res) => {
       data = await fetchTrendingMovies(TMDB_ACCESS_TOKEN, timeWindow, page);
     }
 
-    // Validate movies against OMDb in parallel
+    // Validate movies against OMDb in parallel (with cache)
     const validatedResults = await Promise.all(
       data.results.map(async (movie) => {
-        const omdbResponse = await fetch(
+        const omdbCacheKey = `omdb:${movie.imdbID}`;
+        const cached = cacheGet(omdbCacheKey);
+        if (cached !== null) {
+          return { ...movie, _omdbValid: cached };
+        }
+        const omdbResponse = await fetchWithTimeout(
           `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${movie.imdbID}`
         ).then(r => r.json()).catch(() => ({ Response: 'False' }));
-        return { ...movie, _omdbValid: omdbResponse.Response === 'True' };
+        const valid = omdbResponse.Response === 'True';
+        cacheSet(omdbCacheKey, valid, TTL.OMDB);
+        return { ...movie, _omdbValid: valid };
       })
     );
 
@@ -341,7 +385,8 @@ app.get('/api/poster-proxy', async (req, res) => {
   }
 
   try {
-    const imageResponse = await fetch(url, {
+    const imageResponse = await fetchWithTimeout(url, {
+      timeout: 10000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'image/webp,image/avif,image/*,*/*;q=0.8',

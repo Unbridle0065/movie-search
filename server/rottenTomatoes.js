@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { fetchWithTimeout } from './fetchWithTimeout.js';
 
 export async function fetchRottenTomatoesScores(movieTitle, year) {
   // Create a URL-friendly slug from the movie title
@@ -21,7 +22,15 @@ export async function fetchRottenTomatoesScores(movieTitle, year) {
 
   for (const url of urls) {
     try {
-      const response = await fetch(url, { headers });
+      const response = await fetchWithTimeout(url, { headers, timeout: 10000 });
+      if (response.status === 403) {
+        console.warn(`RT blocked (403) for ${url}`);
+        return { error: 'blocked', criticScore: null, audienceScore: null, url: null };
+      }
+      if (response.status === 429) {
+        console.warn(`RT rate limited (429) for ${url}`);
+        return { error: 'rate_limited', criticScore: null, audienceScore: null, url: null };
+      }
       if (!response.ok) continue;
 
       const html = await response.text();
@@ -31,14 +40,27 @@ export async function fetchRottenTomatoesScores(movieTitle, year) {
         return { ...scores, url };
       }
     } catch (e) {
-      console.error(`Failed to fetch ${url}:`, e.message);
+      if (e.name === 'AbortError') {
+        console.warn(`RT timeout for ${url}`);
+      } else {
+        console.error(`Failed to fetch ${url}:`, e.message);
+      }
     }
   }
 
   // Fallback: search for the movie
   try {
     const searchUrl = `https://www.rottentomatoes.com/search?search=${encodeURIComponent(movieTitle)}`;
-    const searchResponse = await fetch(searchUrl, { headers });
+    const searchResponse = await fetchWithTimeout(searchUrl, { headers, timeout: 10000 });
+
+    if (searchResponse.status === 403) {
+      console.warn('RT blocked (403) on search');
+      return { error: 'blocked', criticScore: null, audienceScore: null, url: null };
+    }
+    if (searchResponse.status === 429) {
+      console.warn('RT rate limited (429) on search');
+      return { error: 'rate_limited', criticScore: null, audienceScore: null, url: null };
+    }
 
     if (searchResponse.ok) {
       const searchHtml = await searchResponse.text();
@@ -58,7 +80,7 @@ export async function fetchRottenTomatoesScores(movieTitle, year) {
       });
 
       if (movieUrl) {
-        const movieResponse = await fetch(movieUrl, { headers });
+        const movieResponse = await fetchWithTimeout(movieUrl, { headers, timeout: 10000 });
         if (movieResponse.ok) {
           const html = await movieResponse.text();
           const scores = extractScores(html);
@@ -67,10 +89,14 @@ export async function fetchRottenTomatoesScores(movieTitle, year) {
       }
     }
   } catch (e) {
-    console.error('RT search failed:', e.message);
+    if (e.name === 'AbortError') {
+      console.warn('RT timeout on search');
+    } else {
+      console.error('RT search failed:', e.message);
+    }
   }
 
-  return null;
+  return { error: 'not_found', criticScore: null, audienceScore: null, url: null };
 }
 
 function extractScores(html) {

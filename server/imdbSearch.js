@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './fetchWithTimeout.js';
+
 const GRAPHQL_URL = 'https://graphql.imdb.com/';
 
 const SEARCH_QUERY = `
@@ -21,7 +23,7 @@ const SEARCH_QUERY = `
 `;
 
 export async function searchImdb(query) {
-  const response = await fetch(GRAPHQL_URL, {
+  const response = await fetchWithTimeout(GRAPHQL_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

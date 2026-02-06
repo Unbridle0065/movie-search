@@ -1,3 +1,6 @@
+import { fetchWithTimeout } from './fetchWithTimeout.js';
+import { cacheGet, cacheSet, TTL } from './cache.js';
+
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
@@ -5,7 +8,7 @@ const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const FILTERED_LANGUAGE_CODES = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'zh', 'ko', 'ja', 'th'];
 
 export async function fetchTrendingMovies(accessToken, timeWindow = 'week', page = 1) {
-  const response = await fetch(`${TMDB_BASE_URL}/trending/movie/${timeWindow}?page=${page}`, {
+  const response = await fetchWithTimeout(`${TMDB_BASE_URL}/trending/movie/${timeWindow}?page=${page}`, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Accept': 'application/json'
@@ -55,7 +58,7 @@ export async function fetchTrendingMovies(accessToken, timeWindow = 'week', page
 }
 
 export async function fetchPopularMovies(accessToken, page = 1) {
-  const response = await fetch(`${TMDB_BASE_URL}/movie/popular?page=${page}`, {
+  const response = await fetchWithTimeout(`${TMDB_BASE_URL}/movie/popular?page=${page}`, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Accept': 'application/json'
@@ -112,7 +115,7 @@ export async function fetchDiscoverMovies(accessToken, genreId, page = 1) {
     'vote_count.gte': '10'
   });
 
-  const response = await fetch(`${TMDB_BASE_URL}/discover/movie?${params}`, {
+  const response = await fetchWithTimeout(`${TMDB_BASE_URL}/discover/movie?${params}`, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Accept': 'application/json'
@@ -163,7 +166,7 @@ export async function fetchDiscoverMovies(accessToken, genreId, page = 1) {
 
 export async function fetchTmdbPosterByImdbId(accessToken, imdbId) {
   try {
-    const response = await fetch(`${TMDB_BASE_URL}/find/${imdbId}?external_source=imdb_id`, {
+    const response = await fetchWithTimeout(`${TMDB_BASE_URL}/find/${imdbId}?external_source=imdb_id`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Accept': 'application/json'
@@ -188,8 +191,12 @@ export async function fetchTmdbPosterByImdbId(accessToken, imdbId) {
 }
 
 async function fetchImdbId(accessToken, tmdbId) {
+  const cacheKey = `tmdb_extid:${tmdbId}`;
+  const cached = cacheGet(cacheKey);
+  if (cached !== null) return cached;
+
   try {
-    const response = await fetch(`${TMDB_BASE_URL}/movie/${tmdbId}/external_ids`, {
+    const response = await fetchWithTimeout(`${TMDB_BASE_URL}/movie/${tmdbId}/external_ids`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Accept': 'application/json'
@@ -201,7 +208,11 @@ async function fetchImdbId(accessToken, tmdbId) {
     }
 
     const data = await response.json();
-    return data.imdb_id || null;
+    const imdbId = data.imdb_id || null;
+    if (imdbId) {
+      cacheSet(cacheKey, imdbId, TTL.TMDB_EXTID);
+    }
+    return imdbId;
   } catch (error) {
     console.error(`Failed to fetch IMDB ID for TMDB ID ${tmdbId}:`, error);
     return null;

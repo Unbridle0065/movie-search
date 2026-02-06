@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './fetchWithTimeout.js';
+
 const GRAPHQL_URL = 'https://graphql.imdb.com/';
 
 const CATEGORY_MAP = {
@@ -41,7 +43,7 @@ export async function fetchParentsGuide(imdbId) {
   const link = `https://www.imdb.com/title/${imdbId}/parentalguide`;
 
   try {
-    const response = await fetch(GRAPHQL_URL, {
+    const response = await fetchWithTimeout(GRAPHQL_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
