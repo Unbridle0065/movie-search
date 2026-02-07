@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { csrfHeaders } from '../utils/csrf';
 
 export default function AdminPanel({ onClose }) {
   const [invites, setInvites] = useState([]);
@@ -44,7 +45,7 @@ export default function AdminPanel({ onClose }) {
     try {
       const response = await fetch('/api/admin/invites', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         credentials: 'include',
         body: JSON.stringify({
           expiresIn,
@@ -87,6 +88,7 @@ export default function AdminPanel({ onClose }) {
     try {
       const response = await fetch(`/api/admin/invites/${inviteId}`, {
         method: 'DELETE',
+        headers: { ...csrfHeaders() },
         credentials: 'include'
       });
 
@@ -111,6 +113,7 @@ export default function AdminPanel({ onClose }) {
     try {
       const response = await fetch(`/api/admin/invites/${inviteId}`, {
         method: 'DELETE',
+        headers: { ...csrfHeaders() },
         credentials: 'include'
       });
 

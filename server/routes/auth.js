@@ -3,6 +3,8 @@ import rateLimit from 'express-rate-limit';
 import { db } from '../db/index.js';
 import * as User from '../models/user.js';
 import * as Invite from '../models/invite.js';
+import * as LoginAttempt from '../models/loginAttempt.js';
+import { generateCsrfToken, clearCsrfCookie } from '../csrf.js';
 
 export const authRouter = Router();
 
@@ -13,46 +15,6 @@ function isString(value) {
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.length > 0;
-}
-
-// Per-account lockout tracking (in-memory)
-const accountLockouts = new Map(); // username -> { attempts: number, lockedUntil: Date | null }
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-
-function checkAccountLockout(username) {
-  const normalized = username.toLowerCase();
-  const record = accountLockouts.get(normalized);
-  if (!record) return { locked: false };
-
-  if (record.lockedUntil && record.lockedUntil > Date.now()) {
-    const remainingMs = record.lockedUntil - Date.now();
-    const remainingMins = Math.ceil(remainingMs / 60000);
-    return { locked: true, remainingMins };
-  }
-
-  // Lockout expired, reset
-  if (record.lockedUntil && record.lockedUntil <= Date.now()) {
-    accountLockouts.delete(normalized);
-  }
-  return { locked: false };
-}
-
-function recordFailedAttempt(username) {
-  const normalized = username.toLowerCase();
-  const record = accountLockouts.get(normalized) || { attempts: 0, lockedUntil: null };
-  record.attempts++;
-
-  if (record.attempts >= MAX_FAILED_ATTEMPTS) {
-    record.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
-  }
-
-  accountLockouts.set(normalized, record);
-  return record.attempts >= MAX_FAILED_ATTEMPTS;
-}
-
-function clearFailedAttempts(username) {
-  accountLockouts.delete(username.toLowerCase());
 }
 
 // Rate limiting for signup
@@ -163,6 +125,7 @@ authRouter.post('/signup', signupLimiter, async (req, res) => {
       req.session.userId = userId;
       req.session.isAdmin = false;
 
+      generateCsrfToken(req, res);
       res.status(201).json({ success: true });
     });
   } catch (error) {
@@ -181,7 +144,7 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
   }
 
   // Check per-account lockout
-  const lockout = checkAccountLockout(username);
+  const lockout = LoginAttempt.checkLockout(username);
   if (lockout.locked) {
     return res.status(429).json({
       error: `Account temporarily locked. Try again in ${lockout.remainingMins} minute(s)`
@@ -196,7 +159,7 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
 
   if (!validPassword) {
     // Record failed attempt and check if account is now locked
-    const nowLocked = recordFailedAttempt(username);
+    const nowLocked = LoginAttempt.recordFailure(username);
     if (nowLocked) {
       return res.status(429).json({
         error: `Too many failed attempts. Account locked for 15 minutes`
@@ -206,7 +169,7 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
   }
 
   // Success - clear any failed attempts
-  clearFailedAttempts(username);
+  LoginAttempt.clearAttempts(username);
   User.updateLastLogin(user.id);
 
   // Regenerate session to prevent session fixation attacks
@@ -220,6 +183,7 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
     req.session.userId = user.id;
     req.session.isAdmin = !!user.is_admin;
 
+    generateCsrfToken(req, res);
     res.json({ success: true, isAdmin: !!user.is_admin });
   });
 });
@@ -230,12 +194,16 @@ authRouter.post('/logout', (req, res) => {
     if (err) {
       return res.status(500).json({ error: 'Failed to logout' });
     }
+    clearCsrfCookie(res);
     res.json({ success: true });
   });
 });
 
 // Auth check
 authRouter.get('/auth/check', (req, res) => {
+  if (req.session?.authenticated) {
+    generateCsrfToken(req, res);
+  }
   res.json({
     authenticated: !!req.session?.authenticated,
     isAdmin: !!req.session?.isAdmin

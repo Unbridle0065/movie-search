@@ -36,6 +36,13 @@ CREATE TABLE IF NOT EXISTS watchlist (
   UNIQUE(user_id, imdb_id)
 );
 
+-- Login attempt tracking for persistent account lockout
+CREATE TABLE IF NOT EXISTS login_attempts (
+  username TEXT PRIMARY KEY,
+  attempts INTEGER DEFAULT 0,
+  locked_until TEXT
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_invites_token_hash ON invites(token_hash);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);

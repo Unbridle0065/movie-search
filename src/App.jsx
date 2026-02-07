@@ -7,6 +7,7 @@ import AdminPanel from './components/AdminPanel';
 import BottomNav from './components/BottomNav';
 import WatchlistView from './components/WatchlistView';
 import ExploreView from './components/ExploreView';
+import { csrfHeaders } from './utils/csrf';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -72,6 +73,7 @@ function App() {
     try {
       await fetch('/api/logout', {
         method: 'POST',
+        headers: { ...csrfHeaders() },
         credentials: 'include'
       });
     } catch (_err) {
@@ -116,6 +118,7 @@ function App() {
       if (inWatchlist) {
         await fetch(`/api/watchlist/${movie.imdbID}`, {
           method: 'DELETE',
+          headers: { ...csrfHeaders() },
           credentials: 'include'
         });
         setWatchlistIds(prev => {
@@ -127,7 +130,7 @@ function App() {
       } else {
         await fetch('/api/watchlist', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
           credentials: 'include',
           body: JSON.stringify({
             imdbId: movie.imdbID,

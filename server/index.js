@@ -18,6 +18,7 @@ import { fetchWithTimeout } from './fetchWithTimeout.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { watchlistRouter } from './routes/watchlist.js';
+import { csrfProtection } from './csrf.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -76,7 +77,8 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'https://movies.nuttracker.net',
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token']
 }));
 app.use(express.json());
 
@@ -110,6 +112,19 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));
+
+// CSRF protection for state-mutating requests
+app.use('/api', csrfProtection);
+
+// Helper to fetch from OMDb API without exposing the API key in URLs/logs
+async function omdbFetch(params) {
+  const url = new URL('https://www.omdbapi.com/');
+  url.searchParams.set('apikey', OMDB_API_KEY);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return fetchWithTimeout(url.toString());
+}
 
 // Auth middleware - protects API routes
 const requireAuth = (req, res, next) => {
@@ -163,9 +178,8 @@ app.get('/api/search', requireAuth, async (req, res) => {
           fetchTmdbPosterByImdbId(TMDB_ACCESS_TOKEN, movie.imdbID),
           (async () => {
             if (omdbValid !== null) return;
-            const omdbResponse = await fetchWithTimeout(
-              `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${movie.imdbID}`
-            ).then(r => r.json()).catch(() => ({ Response: 'False' }));
+            const omdbResponse = await omdbFetch({ i: movie.imdbID })
+              .then(r => r.json()).catch(() => ({ Response: 'False' }));
             omdbValid = omdbResponse.Response === 'True';
             cacheSet(omdbCacheKey, omdbValid, TTL.OMDB);
           })()
@@ -200,9 +214,7 @@ app.get('/api/movie/:imdbId', requireAuth, async (req, res) => {
   }
 
   try {
-    const response = await fetchWithTimeout(
-      `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbId}&plot=full`
-    );
+    const response = await omdbFetch({ i: imdbId, plot: 'full' });
     const data = await response.json();
 
     if (data.Response === 'False') {
@@ -325,9 +337,8 @@ app.get('/api/trending', requireAuth, async (req, res) => {
         if (cached !== null) {
           return { ...movie, _omdbValid: cached };
         }
-        const omdbResponse = await fetchWithTimeout(
-          `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${movie.imdbID}`
-        ).then(r => r.json()).catch(() => ({ Response: 'False' }));
+        const omdbResponse = await omdbFetch({ i: movie.imdbID })
+          .then(r => r.json()).catch(() => ({ Response: 'False' }));
         const valid = omdbResponse.Response === 'True';
         cacheSet(omdbCacheKey, valid, TTL.OMDB);
         return { ...movie, _omdbValid: valid };
@@ -348,7 +359,7 @@ app.get('/api/trending', requireAuth, async (req, res) => {
 
 // Poster image proxy to bypass browser tracking protection
 // This makes third-party CDN images appear as first-party requests
-app.get('/api/poster-proxy', async (req, res) => {
+app.get('/api/poster-proxy', requireAuth, async (req, res) => {
   const encodedUrl = req.query.url;
 
   if (!encodedUrl) {
@@ -404,6 +415,13 @@ app.get('/api/poster-proxy', async (req, res) => {
       return res.status(400).json({ error: 'Not an image' });
     }
 
+    // Reject oversized responses (10MB limit)
+    const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+    const contentLength = parseInt(imageResponse.headers.get('content-length'), 10);
+    if (contentLength && contentLength > MAX_IMAGE_SIZE) {
+      return res.status(413).json({ error: 'Image too large' });
+    }
+
     res.set({
       'Content-Type': contentType,
       'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2592000',
@@ -411,6 +429,9 @@ app.get('/api/poster-proxy', async (req, res) => {
     });
 
     const buffer = await imageResponse.arrayBuffer();
+    if (buffer.byteLength > MAX_IMAGE_SIZE) {
+      return res.status(413).json({ error: 'Image too large' });
+    }
     res.send(Buffer.from(buffer));
   } catch (error) {
     console.error('Poster proxy error:', error);
@@ -425,4 +446,7 @@ app.get('/{*splat}', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('WARNING: NODE_ENV is not "production" — session cookies will not have the Secure flag');
+  }
 });
