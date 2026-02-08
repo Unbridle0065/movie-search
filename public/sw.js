@@ -1,4 +1,4 @@
-const CACHE_NAME = 'movie-search-v1';
+const CACHE_NAME = 'movie-search-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -35,16 +35,21 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - network first, fallback to cache (static assets only)
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Never cache API responses — they may contain user-specific data
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response
-        const responseToCache = response.clone();
-
-        // Cache successful responses
-        if (response.status === 200) {
+        // Only cache same-origin GET requests for static assets
+        if (response.status === 200 && event.request.method === 'GET' && url.origin === self.location.origin) {
+          const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
