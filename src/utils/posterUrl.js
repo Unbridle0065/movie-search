@@ -8,5 +8,10 @@ export function getPosterUrl(originalUrl) {
     return null;
   }
 
+  // Avoid double-proxying if the URL is already a proxy URL
+  if (originalUrl.startsWith('/api/poster-proxy')) {
+    return originalUrl;
+  }
+
   return `/api/poster-proxy?url=${encodeURIComponent(originalUrl)}`;
 }

@@ -187,7 +187,7 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
                   imdbID: imdbId,
                   Title: movie.Title,
                   Year: movie.Year,
-                  Poster: posterUrl
+                  Poster: rawPosterUrl
                 }, isInWatchlist)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   isInWatchlist
