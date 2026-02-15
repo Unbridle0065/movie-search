@@ -78,11 +78,42 @@ function ParentsGuideSection({ category, imdbLink }) {
   );
 }
 
+function LoadingSkeleton() {
+  return (
+    <div className="bg-gray-900 rounded-2xl overflow-hidden animate-fade-in-up opacity-0">
+      <div className="md:flex">
+        <div className="md:w-1/3 flex-shrink-0">
+          <div className="w-full aspect-[2/3] bg-gray-700 animate-pulse" />
+        </div>
+        <div className="p-6 md:p-8 flex-1 space-y-4">
+          <div className="h-8 bg-gray-700 rounded animate-pulse w-3/4" />
+          <div className="h-4 bg-gray-700 rounded animate-pulse w-1/2" />
+          <div className="space-y-2 pt-2">
+            <div className="h-4 bg-gray-700 rounded animate-pulse w-full" />
+            <div className="h-4 bg-gray-700 rounded animate-pulse w-full" />
+            <div className="h-4 bg-gray-700 rounded animate-pulse w-2/3" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="h-20 bg-gray-800 rounded-lg animate-pulse" />
+            <div className="h-20 bg-gray-800 rounded-lg animate-pulse" />
+          </div>
+          <div className="h-6 bg-gray-700 rounded animate-pulse w-1/4 pt-2" />
+          <div className="flex gap-3">
+            <div className="h-16 w-32 bg-gray-800 rounded-lg animate-pulse" />
+            <div className="h-16 w-32 bg-gray-800 rounded-lg animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatchlist, onToggleWatchlist }) {
   const [movie, setMovie] = useState(null);
   const [parentsGuide, setParentsGuide] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [posterLoaded, setPosterLoaded] = useState(false);
 
   // Handle browser back button to close modal instead of exiting app
   useEffect(() => {
@@ -137,16 +168,31 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="fixed inset-0 bg-black/90 overflow-y-auto z-50 animate-fade-in">
+        <div className="min-h-screen py-8 px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center mb-6">
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+            </div>
+            <LoadingSkeleton />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !movie) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div className="bg-gray-900 p-8 rounded-xl max-w-md">
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in">
+        <div className="bg-gray-900 p-8 rounded-xl max-w-md animate-fade-in-up opacity-0">
           <p className="text-red-400 mb-4">{error || 'Movie not found'}</p>
           <button onClick={handleBack} className="text-blue-400 hover:text-blue-300">
             Go back
@@ -167,7 +213,7 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
     : [];
 
   return (
-    <div className="fixed inset-0 bg-black/90 overflow-y-auto z-50">
+    <div className="fixed inset-0 bg-black/90 overflow-y-auto z-50 animate-fade-in">
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -208,15 +254,25 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
             )}
           </div>
 
-          <div className="bg-gray-900 rounded-2xl overflow-hidden">
+          <div className="bg-gray-900 rounded-2xl overflow-hidden animate-fade-in-up opacity-0">
             <div className="md:flex">
-              <div className="md:w-1/3 flex-shrink-0">
+              <div className="md:w-1/3 flex-shrink-0 relative">
                 {hasPoster ? (
-                  <img
-                    src={posterUrl}
-                    alt={movie.Title}
-                    className="w-full h-auto"
-                  />
+                  <>
+                    {!posterLoaded && (
+                      <div className="absolute inset-0 bg-gray-700 animate-pulse flex items-center justify-center">
+                        <svg className="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                        </svg>
+                      </div>
+                    )}
+                    <img
+                      src={posterUrl}
+                      alt={movie.Title}
+                      onLoad={() => setPosterLoaded(true)}
+                      className={`w-full h-auto transition-opacity duration-500 ${posterLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    />
+                  </>
                 ) : (
                   <div className="w-full aspect-[2/3] bg-gray-700 flex items-center justify-center">
                     <div className="text-center p-4">
