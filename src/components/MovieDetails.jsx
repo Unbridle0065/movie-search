@@ -108,12 +108,14 @@ function LoadingSkeleton() {
   );
 }
 
-export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatchlist, onToggleWatchlist }) {
+export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatchlist, onToggleWatchlist, isWatched, onMarkAsWatched, onRemoveFromWatched }) {
   const [movie, setMovie] = useState(null);
   const [parentsGuide, setParentsGuide] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [posterLoaded, setPosterLoaded] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [watchedDate, setWatchedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Handle browser back button to close modal instead of exiting app
   useEffect(() => {
@@ -227,30 +229,92 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
               Back
             </button>
 
-            {movie && onToggleWatchlist && (
-              <button
-                onClick={() => onToggleWatchlist({
-                  imdbID: imdbId,
-                  Title: movie.Title,
-                  Year: movie.Year,
-                  Poster: rawPosterUrl
-                }, isInWatchlist)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  isInWatchlist
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                }`}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill={isInWatchlist ? 'currentColor' : 'none'}
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {movie && (
+              <div className="flex items-center gap-2 relative">
+                {/* Want to Watch button */}
+                <button
+                  onClick={() => onToggleWatchlist({
+                    imdbID: imdbId,
+                    Title: movie.Title,
+                    Year: movie.Year,
+                    Poster: rawPosterUrl
+                  }, isInWatchlist)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    isInWatchlist
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                </svg>
-                {isInWatchlist ? 'In Watchlist' : 'Want to Watch'}
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill={isInWatchlist ? 'currentColor' : 'none'}
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  {isInWatchlist ? 'In Watchlist' : 'Want to Watch'}
+                </button>
+
+                {/* Watched button */}
+                <button
+                  onClick={() => {
+                    if (isWatched) {
+                      onRemoveFromWatched(imdbId);
+                    } else {
+                      setWatchedDate(new Date().toISOString().split('T')[0]);
+                      setShowDatePicker(true);
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    isWatched
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Watched
+                </button>
+
+                {/* Date picker popover */}
+                {showDatePicker && (
+                  <div className="absolute right-0 top-full mt-2 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl z-10 w-64">
+                    <label className="text-sm text-gray-400 block mb-2">When did you watch it?</label>
+                    <input
+                      type="date"
+                      value={watchedDate}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setWatchedDate(e.target.value)}
+                      className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm w-full mb-3 focus:outline-none focus:border-blue-500"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const movieObj = {
+                            imdbID: imdbId,
+                            Title: movie.Title,
+                            Year: movie.Year,
+                            Poster: rawPosterUrl
+                          };
+                          onMarkAsWatched(movieObj, watchedDate, isInWatchlist);
+                          setShowDatePicker(false);
+                        }}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setShowDatePicker(false)}
+                        className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium py-2 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

@@ -42,7 +42,7 @@ export default function BottomNav({ activeView, onViewChange }) {
           <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
-          <span className="text-xs font-medium">Want to Watch</span>
+          <span className="text-xs font-medium">My Movies</span>
         </button>
       </div>
     </nav>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { getPosterUrl } from '../utils/posterUrl';
 
-function WatchlistRow({ movie, index, onMovieClick }) {
+function MovieRow({ movie, index, onMovieClick, actions }) {
   const posterUrl = getPosterUrl(movie.poster);
   const hasPoster = posterUrl !== null;
   const [loaded, setLoaded] = useState(false);
@@ -35,7 +35,13 @@ function WatchlistRow({ movie, index, onMovieClick }) {
         {movie.year && (
           <p className="text-gray-400 text-sm">{movie.year}</p>
         )}
+        {movie.watched_date && (
+          <p className="text-gray-500 text-xs mt-0.5">
+            {new Date(movie.watched_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </p>
+        )}
       </div>
+      {actions}
       <svg className="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
@@ -46,10 +52,6 @@ function WatchlistRow({ movie, index, onMovieClick }) {
 function LoadingSkeleton() {
   return (
     <div className="animate-fade-in opacity-0">
-      <div className="flex items-center justify-between mb-6">
-        <div className="h-7 w-36 bg-gray-700 rounded animate-pulse" />
-        <div className="h-9 w-40 bg-gray-700 rounded-lg animate-pulse" />
-      </div>
       <div className="space-y-3">
         {Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="flex items-center gap-4 p-3 bg-gray-800 rounded-lg">
@@ -66,59 +68,199 @@ function LoadingSkeleton() {
   );
 }
 
+function groupByMonth(movies) {
+  const groups = {};
+  for (const movie of movies) {
+    const date = new Date(movie.watched_date + 'T00:00:00');
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    if (!groups[key]) {
+      groups[key] = { label, movies: [] };
+    }
+    groups[key].movies.push(movie);
+  }
+  return Object.entries(groups)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([, group]) => group);
+}
+
+function EmptyState({ type }) {
+  if (type === 'watched') {
+    return (
+      <div className="text-center py-12 animate-fade-in opacity-0">
+        <svg className="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+        </svg>
+        <p className="text-gray-400">No watched movies yet</p>
+        <p className="text-gray-500 text-sm mt-1">Mark movies as watched to track your viewing history</p>
+      </div>
+    );
+  }
+  return (
+    <div className="text-center py-12 animate-fade-in opacity-0">
+      <svg className="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+      <p className="text-gray-400">Your watchlist is empty</p>
+      <p className="text-gray-500 text-sm mt-1">Search for movies and add them to your list</p>
+    </div>
+  );
+}
+
 export default function WatchlistView({
   movies,
   onMovieClick,
   sortBy,
   sortOrder,
   onSortChange,
-  isLoading
+  isLoading,
+  activeSubTab,
+  onSubTabChange,
+  watchedMovies,
+  onWatchedMovieClick,
+  watchedSortBy,
+  watchedSortOrder,
+  onWatchedSortChange,
+  watchedLoading,
+  onMarkAsWatched
 }) {
-  if (isLoading) {
-    return <LoadingSkeleton />;
-  }
-
-  if (movies.length === 0) {
-    return (
-      <div className="text-center py-12 animate-fade-in opacity-0">
-        <svg className="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-        </svg>
-        <p className="text-gray-400">Your watchlist is empty</p>
-        <p className="text-gray-500 text-sm mt-1">Search for movies and add them to your list</p>
-      </div>
-    );
-  }
+  const isWantToWatch = activeSubTab === 'wantToWatch';
+  const currentLoading = isWantToWatch ? isLoading : watchedLoading;
+  const showGrouping = !isWantToWatch && (watchedSortBy === 'watched_date' || watchedSortBy === 'added_at');
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">Want to Watch</h2>
-        <select
-          value={`${sortBy}-${sortOrder}`}
-          onChange={(e) => {
-            const [by, order] = e.target.value.split('-');
-            onSortChange(by, order);
-          }}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      {/* Sub-tabs */}
+      <div className="flex gap-1 bg-gray-800 rounded-lg p-1 mb-6">
+        <button
+          onClick={() => onSubTabChange('wantToWatch')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            isWantToWatch
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-400 hover:text-white'
+          }`}
         >
-          <option value="added_at-desc">Recently Added</option>
-          <option value="added_at-asc">Oldest First</option>
-          <option value="title-asc">A-Z</option>
-          <option value="title-desc">Z-A</option>
-        </select>
+          Want to Watch{movies.length > 0 ? ` (${movies.length})` : ''}
+        </button>
+        <button
+          onClick={() => onSubTabChange('watched')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            !isWantToWatch
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Watched{watchedMovies.length > 0 ? ` (${watchedMovies.length})` : ''}
+        </button>
       </div>
 
-      <div className="space-y-3">
-        {movies.map((movie, index) => (
-          <WatchlistRow
-            key={movie.imdb_id}
-            movie={movie}
-            index={index}
-            onMovieClick={onMovieClick}
-          />
-        ))}
-      </div>
+      {currentLoading ? (
+        <LoadingSkeleton />
+      ) : isWantToWatch ? (
+        /* Want to Watch tab */
+        movies.length === 0 ? (
+          <EmptyState type="wantToWatch" />
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Want to Watch</h2>
+              <select
+                value={`${sortBy}-${sortOrder}`}
+                onChange={(e) => {
+                  const [by, order] = e.target.value.split('-');
+                  onSortChange(by, order);
+                }}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="added_at-desc">Recently Added</option>
+                <option value="added_at-asc">Oldest First</option>
+                <option value="title-asc">A-Z</option>
+                <option value="title-desc">Z-A</option>
+              </select>
+            </div>
+
+            <div className="space-y-3">
+              {movies.map((movie, index) => (
+                <MovieRow
+                  key={movie.imdb_id}
+                  movie={movie}
+                  index={index}
+                  onMovieClick={onMovieClick}
+                  actions={
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMarkAsWatched(movie);
+                      }}
+                      className="p-2 text-gray-500 hover:text-green-400 transition-colors flex-shrink-0"
+                      title="Mark as watched"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        )
+      ) : (
+        /* Watched tab */
+        watchedMovies.length === 0 ? (
+          <EmptyState type="watched" />
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Watched</h2>
+              <select
+                value={`${watchedSortBy}-${watchedSortOrder}`}
+                onChange={(e) => {
+                  const [by, order] = e.target.value.split('-');
+                  onWatchedSortChange(by, order);
+                }}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="watched_date-desc">Recently Watched</option>
+                <option value="watched_date-asc">Oldest First</option>
+                <option value="title-asc">A-Z</option>
+                <option value="title-desc">Z-A</option>
+              </select>
+            </div>
+
+            {showGrouping ? (
+              groupByMonth(watchedMovies).map((group) => (
+                <div key={group.label} className="mb-6">
+                  <h3 className="text-gray-400 text-sm font-medium mb-3 sticky top-0 bg-gray-950 py-2 z-10">
+                    {group.label}
+                  </h3>
+                  <div className="space-y-3">
+                    {group.movies.map((movie, index) => (
+                      <MovieRow
+                        key={movie.imdb_id}
+                        movie={movie}
+                        index={index}
+                        onMovieClick={onWatchedMovieClick}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="space-y-3">
+                {watchedMovies.map((movie, index) => (
+                  <MovieRow
+                    key={movie.imdb_id}
+                    movie={movie}
+                    index={index}
+                    onMovieClick={onWatchedMovieClick}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      )}
     </div>
   );
 }

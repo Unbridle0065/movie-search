@@ -28,6 +28,11 @@ function App() {
   const [watchlistMovies, setWatchlistMovies] = useState([]);
   const [watchlistSort, setWatchlistSort] = useState({ by: 'added_at', order: 'desc' });
   const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [watchedIds, setWatchedIds] = useState(new Set());
+  const [watchedMovies, setWatchedMovies] = useState([]);
+  const [watchedSort, setWatchedSort] = useState({ by: 'watched_date', order: 'desc' });
+  const [watchedLoading, setWatchedLoading] = useState(false);
+  const [watchlistSubTab, setWatchlistSubTab] = useState('wantToWatch');
   const [trendingMovies, setTrendingMovies] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingPage, setTrendingPage] = useState(1);
@@ -45,6 +50,18 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to fetch watchlist IDs:', err);
+    }
+  }
+
+  async function fetchWatchedIds() {
+    try {
+      const response = await fetch('/api/watched/ids', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setWatchedIds(new Set(data.ids || []));
+      }
+    } catch (err) {
+      console.error('Failed to fetch watched IDs:', err);
     }
   }
 
@@ -66,6 +83,7 @@ function App() {
         setUserEmail(data.email || null);
         if (data.authenticated) {
           fetchWatchlistIds();
+          fetchWatchedIds();
         }
       })
       .catch(() => setIsAuthenticated(false))
@@ -90,6 +108,9 @@ function App() {
     setActiveView('search');
     setWatchlistIds(new Set());
     setWatchlistMovies([]);
+    setWatchedIds(new Set());
+    setWatchedMovies([]);
+    setWatchlistSubTab('wantToWatch');
   }
 
   function handleLogin(userIsAdmin, email) {
@@ -98,6 +119,7 @@ function App() {
     setUserEmail(email || null);
     setInviteToken(null);
     fetchWatchlistIds();
+    fetchWatchedIds();
   }
 
   async function fetchWatchlistWithSort(sortBy, sortOrder) {
@@ -151,6 +173,79 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to toggle watchlist:', err);
+    }
+  }
+
+  async function fetchWatchedWithSort(sortBy, sortOrder) {
+    setWatchedLoading(true);
+    try {
+      const response = await fetch(
+        `/api/watched?sort=${sortBy}&order=${sortOrder}`,
+        { credentials: 'include' }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setWatchedMovies(data.movies || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch watched:', err);
+    } finally {
+      setWatchedLoading(false);
+    }
+  }
+
+  async function markAsWatched(movie, watchedDate, fromWatchlist) {
+    const endpoint = fromWatchlist ? '/api/watched/move' : '/api/watched';
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        credentials: 'include',
+        body: JSON.stringify({
+          imdbId: movie.imdbID,
+          title: movie.Title,
+          year: movie.Year,
+          poster: movie.Poster,
+          watchedDate
+        })
+      });
+      if (response.ok) {
+        // Add to watched set
+        setWatchedIds(prev => new Set([...prev, movie.imdbID]));
+        // Remove from watchlist if it was there
+        if (fromWatchlist || watchlistIds.has(movie.imdbID)) {
+          setWatchlistIds(prev => {
+            const next = new Set(prev);
+            next.delete(movie.imdbID);
+            return next;
+          });
+          setWatchlistMovies(prev => prev.filter(m => m.imdb_id !== movie.imdbID));
+        }
+        // Refresh watched list if viewing it
+        if (activeView === 'watchlist' && watchlistSubTab === 'watched') {
+          fetchWatchedWithSort(watchedSort.by, watchedSort.order);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to mark as watched:', err);
+    }
+  }
+
+  async function removeFromWatched(imdbId) {
+    try {
+      await fetch(`/api/watched/${imdbId}`, {
+        method: 'DELETE',
+        headers: { ...csrfHeaders() },
+        credentials: 'include'
+      });
+      setWatchedIds(prev => {
+        const next = new Set(prev);
+        next.delete(imdbId);
+        return next;
+      });
+      setWatchedMovies(prev => prev.filter(m => m.imdb_id !== imdbId));
+    } catch (err) {
+      console.error('Failed to remove from watched:', err);
     }
   }
 
@@ -271,18 +366,41 @@ function App() {
     handleMovieClick(imdbId, movie?.poster);
   }
 
+  function handleWatchedMovieClick(imdbId) {
+    const movie = watchedMovies.find(m => m.imdb_id === imdbId);
+    handleMovieClick(imdbId, movie?.poster);
+  }
+
   function handleViewChange(view) {
     setActiveView(view);
     if (view === 'watchlist') {
-      fetchWatchlistWithSort(watchlistSort.by, watchlistSort.order);
+      if (watchlistSubTab === 'wantToWatch') {
+        fetchWatchlistWithSort(watchlistSort.by, watchlistSort.order);
+      } else {
+        fetchWatchedWithSort(watchedSort.by, watchedSort.order);
+      }
     } else if (view === 'trending' && trendingMovies.length === 0) {
       fetchExplore(1, exploreMode, exploreGenre, false);
+    }
+  }
+
+  function handleSubTabChange(subTab) {
+    setWatchlistSubTab(subTab);
+    if (subTab === 'wantToWatch') {
+      fetchWatchlistWithSort(watchlistSort.by, watchlistSort.order);
+    } else {
+      fetchWatchedWithSort(watchedSort.by, watchedSort.order);
     }
   }
 
   function handleSortChange(by, order) {
     setWatchlistSort({ by, order });
     fetchWatchlistWithSort(by, order);
+  }
+
+  function handleWatchedSortChange(by, order) {
+    setWatchedSort({ by, order });
+    fetchWatchedWithSort(by, order);
   }
 
   return (
@@ -345,6 +463,19 @@ function App() {
             sortOrder={watchlistSort.order}
             onSortChange={handleSortChange}
             isLoading={watchlistLoading}
+            activeSubTab={watchlistSubTab}
+            onSubTabChange={handleSubTabChange}
+            watchedMovies={watchedMovies}
+            onWatchedMovieClick={handleWatchedMovieClick}
+            watchedSortBy={watchedSort.by}
+            watchedSortOrder={watchedSort.order}
+            onWatchedSortChange={handleWatchedSortChange}
+            watchedLoading={watchedLoading}
+            onMarkAsWatched={(movie) => markAsWatched(
+              { imdbID: movie.imdb_id, Title: movie.title, Year: movie.year, Poster: movie.poster },
+              new Date().toISOString().split('T')[0],
+              true
+            )}
           />
         )}
       </main>
@@ -356,6 +487,9 @@ function App() {
           onClose={() => { setSelectedMovieId(null); setSelectedMoviePoster(null); }}
           isInWatchlist={watchlistIds.has(selectedMovieId)}
           onToggleWatchlist={toggleWatchlist}
+          isWatched={watchedIds.has(selectedMovieId)}
+          onMarkAsWatched={markAsWatched}
+          onRemoveFromWatched={removeFromWatched}
         />
       )}
 

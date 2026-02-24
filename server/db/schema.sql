@@ -43,8 +43,23 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   locked_until TEXT
 );
 
+-- Watched movies table
+CREATE TABLE IF NOT EXISTS watched (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  imdb_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  year TEXT,
+  poster TEXT,
+  watched_date TEXT NOT NULL DEFAULT (date('now')),
+  added_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(user_id, imdb_id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_invites_token_hash ON invites(token_hash);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_watchlist_user_id ON watchlist(user_id);
+CREATE INDEX IF NOT EXISTS idx_watched_user_id ON watched(user_id);
+CREATE INDEX IF NOT EXISTS idx_watched_user_date ON watched(user_id, watched_date DESC);

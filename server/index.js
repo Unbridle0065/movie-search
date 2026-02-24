@@ -18,6 +18,7 @@ import { fetchWithTimeout } from './fetchWithTimeout.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { watchlistRouter } from './routes/watchlist.js';
+import { watchedRouter } from './routes/watched.js';
 import { csrfProtection } from './csrf.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -150,6 +151,7 @@ app.use(express.static(join(__dirname, '../dist')));
 app.use('/api', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/watchlist', watchlistRouter);
+app.use('/api/watched', watchedRouter);
 
 // Migrate existing env var user to database (runs once)
 migrateFromEnvAuth().catch(err => console.error('Migration error:', err));
