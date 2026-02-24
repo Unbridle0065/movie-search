@@ -289,7 +289,6 @@ function App() {
     <div className="bg-gray-950 min-h-screen pb-16">
       <div className="fixed top-4 right-4 z-50">
         <UserMenu
-          email={userEmail}
           isAdmin={isAdmin}
           onLogout={handleLogout}
           onOpenAdmin={() => setShowAdminPanel(true)}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 
-export default function UserMenu({ email, isAdmin, onLogout, onOpenAdmin }) {
+export default function UserMenu({ isAdmin, onLogout, onOpenAdmin }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -30,11 +30,7 @@ export default function UserMenu({ email, isAdmin, onLogout, onOpenAdmin }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden z-50">
-          <div className="px-4 py-3 border-b border-gray-700">
-            <p className="text-sm text-gray-300 truncate">{email}</p>
-          </div>
-
+        <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden z-50">
           {isAdmin && (
             <button
               onClick={() => { setOpen(false); onOpenAdmin(); }}
