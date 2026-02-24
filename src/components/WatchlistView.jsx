@@ -121,8 +121,7 @@ export default function WatchlistView({
   watchedSortBy,
   watchedSortOrder,
   onWatchedSortChange,
-  watchedLoading,
-  onMarkAsWatched
+  watchedLoading
 }) {
   const isWantToWatch = activeSubTab === 'wantToWatch';
   const currentLoading = isWantToWatch ? isLoading : watchedLoading;
@@ -186,20 +185,6 @@ export default function WatchlistView({
                   movie={movie}
                   index={index}
                   onMovieClick={onMovieClick}
-                  actions={
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMarkAsWatched(movie);
-                      }}
-                      className="p-2 text-gray-500 hover:text-green-400 transition-colors flex-shrink-0"
-                      title="Mark as watched"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  }
                 />
               ))}
             </div>

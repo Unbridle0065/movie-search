@@ -471,11 +471,6 @@ function App() {
             watchedSortOrder={watchedSort.order}
             onWatchedSortChange={handleWatchedSortChange}
             watchedLoading={watchedLoading}
-            onMarkAsWatched={(movie) => markAsWatched(
-              { imdbID: movie.imdb_id, Title: movie.title, Year: movie.year, Poster: movie.poster },
-              new Date().toISOString().split('T')[0],
-              true
-            )}
           />
         )}
       </main>
