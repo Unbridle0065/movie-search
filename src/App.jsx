@@ -155,18 +155,39 @@ function App() {
         });
         setWatchlistMovies(prev => prev.filter(m => m.imdb_id !== movie.imdbID));
       } else {
-        await fetch('/api/watchlist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
-          credentials: 'include',
-          body: JSON.stringify({
-            imdbId: movie.imdbID,
-            title: movie.Title,
-            year: movie.Year,
-            poster: movie.Poster
+        const requests = [
+          fetch('/api/watchlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+            credentials: 'include',
+            body: JSON.stringify({
+              imdbId: movie.imdbID,
+              title: movie.Title,
+              year: movie.Year,
+              poster: movie.Poster
+            })
           })
-        });
+        ];
+        // Remove from watched if it's there (mutual exclusivity)
+        if (watchedIds.has(movie.imdbID)) {
+          requests.push(
+            fetch(`/api/watched/${movie.imdbID}`, {
+              method: 'DELETE',
+              headers: { ...csrfHeaders() },
+              credentials: 'include'
+            })
+          );
+        }
+        await Promise.all(requests);
         setWatchlistIds(prev => new Set([...prev, movie.imdbID]));
+        if (watchedIds.has(movie.imdbID)) {
+          setWatchedIds(prev => {
+            const next = new Set(prev);
+            next.delete(movie.imdbID);
+            return next;
+          });
+          setWatchedMovies(prev => prev.filter(m => m.imdb_id !== movie.imdbID));
+        }
         if (activeView === 'watchlist') {
           fetchWatchlistWithSort(watchlistSort.by, watchlistSort.order);
         }
