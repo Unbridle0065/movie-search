@@ -487,6 +487,8 @@ function App() {
             activeSubTab={watchlistSubTab}
             onSubTabChange={handleSubTabChange}
             watchedMovies={watchedMovies}
+            watchlistCount={watchlistIds.size}
+            watchedCount={watchedIds.size}
             onWatchedMovieClick={handleWatchedMovieClick}
             watchedSortBy={watchedSort.by}
             watchedSortOrder={watchedSort.order}

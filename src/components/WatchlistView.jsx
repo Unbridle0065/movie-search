@@ -121,7 +121,9 @@ export default function WatchlistView({
   watchedSortBy,
   watchedSortOrder,
   onWatchedSortChange,
-  watchedLoading
+  watchedLoading,
+  watchlistCount,
+  watchedCount
 }) {
   const isWantToWatch = activeSubTab === 'wantToWatch';
   const currentLoading = isWantToWatch ? isLoading : watchedLoading;
@@ -139,7 +141,7 @@ export default function WatchlistView({
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          Want to Watch{movies.length > 0 ? ` (${movies.length})` : ''}
+          Want to Watch{watchlistCount > 0 ? ` (${watchlistCount})` : ''}
         </button>
         <button
           onClick={() => onSubTabChange('watched')}
@@ -149,7 +151,7 @@ export default function WatchlistView({
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          Watched{watchedMovies.length > 0 ? ` (${watchedMovies.length})` : ''}
+          Watched{watchedCount > 0 ? ` (${watchedCount})` : ''}
         </button>
       </div>
 
