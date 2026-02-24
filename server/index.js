@@ -428,14 +428,28 @@ app.get('/api/poster-proxy', requireAuth, async (req, res) => {
       'X-Content-Type-Options': 'nosniff'
     });
 
-    const buffer = await imageResponse.arrayBuffer();
-    if (buffer.byteLength > MAX_IMAGE_SIZE) {
-      return res.status(413).json({ error: 'Image too large' });
+    if (contentLength) {
+      res.set('Content-Length', String(contentLength));
     }
-    res.send(Buffer.from(buffer));
+
+    // Stream the response instead of buffering to reduce memory usage
+    // and start sending bytes to the client immediately
+    const { Readable } = await import('stream');
+    const nodeStream = Readable.fromWeb(imageResponse.body);
+    nodeStream.pipe(res);
+    nodeStream.on('error', (err) => {
+      console.error('Poster stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to proxy image' });
+      } else {
+        res.destroy();
+      }
+    });
   } catch (error) {
     console.error('Poster proxy error:', error);
-    res.status(500).json({ error: 'Failed to proxy image' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to proxy image' });
+    }
   }
 });
 
