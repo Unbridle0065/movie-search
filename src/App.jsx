@@ -287,16 +287,15 @@ function App() {
 
   return (
     <div className="bg-gray-950 min-h-screen pb-16">
-      <div className="fixed top-4 right-4 z-50">
-        <UserMenu
-          isAdmin={isAdmin}
-          onLogout={handleLogout}
-          onOpenAdmin={() => setShowAdminPanel(true)}
-        />
-      </div>
-
       {activeView === 'search' && (
         <header className="py-12 px-4 bg-gradient-to-b from-gray-900 to-gray-950 relative">
+          <div className="absolute top-4 right-4">
+            <UserMenu
+              isAdmin={isAdmin}
+              onLogout={handleLogout}
+              onOpenAdmin={() => setShowAdminPanel(true)}
+            />
+          </div>
           <div className="max-w-6xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
               Movie Search
