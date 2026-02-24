@@ -89,7 +89,7 @@ export default function AuthPage({ onLogin, initialToken }) {
         const data = await response.json();
 
         if (response.ok) {
-          onLogin(false); // Not admin
+          onLogin(false, email); // Not admin
         } else {
           setError(data.error || 'Signup failed');
         }
@@ -109,7 +109,7 @@ export default function AuthPage({ onLogin, initialToken }) {
         const data = await response.json();
 
         if (response.ok) {
-          onLogin(data.isAdmin);
+          onLogin(data.isAdmin, data.email);
         } else {
           setError(data.error || 'Login failed');
         }

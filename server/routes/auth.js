@@ -184,7 +184,7 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
     req.session.isAdmin = !!user.is_admin;
 
     generateCsrfToken(req, res);
-    res.json({ success: true, isAdmin: !!user.is_admin });
+    res.json({ success: true, isAdmin: !!user.is_admin, email: user.email });
   });
 });
 
@@ -203,9 +203,15 @@ authRouter.post('/logout', (req, res) => {
 authRouter.get('/auth/check', (req, res) => {
   if (req.session?.authenticated) {
     generateCsrfToken(req, res);
+    const user = User.findById(req.session.userId);
+    return res.json({
+      authenticated: true,
+      isAdmin: !!req.session.isAdmin,
+      email: user?.email || null
+    });
   }
   res.json({
-    authenticated: !!req.session?.authenticated,
-    isAdmin: !!req.session?.isAdmin
+    authenticated: false,
+    isAdmin: false
   });
 });

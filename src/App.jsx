@@ -4,6 +4,7 @@ import MovieGrid from './components/MovieGrid';
 import MovieDetails from './components/MovieDetails';
 import AuthPage from './components/AuthPage';
 import AdminPanel from './components/AdminPanel';
+import UserMenu from './components/UserMenu';
 import BottomNav from './components/BottomNav';
 import WatchlistView from './components/WatchlistView';
 import ExploreView from './components/ExploreView';
@@ -12,6 +13,7 @@ import { csrfHeaders } from './utils/csrf';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [movies, setMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +63,7 @@ function App() {
       .then(data => {
         setIsAuthenticated(data.authenticated);
         setIsAdmin(data.isAdmin || false);
+        setUserEmail(data.email || null);
         if (data.authenticated) {
           fetchWatchlistIds();
         }
@@ -81,6 +84,7 @@ function App() {
     }
     setIsAuthenticated(false);
     setIsAdmin(false);
+    setUserEmail(null);
     setMovies([]);
     setHasSearched(false);
     setActiveView('search');
@@ -88,9 +92,10 @@ function App() {
     setWatchlistMovies([]);
   }
 
-  function handleLogin(userIsAdmin) {
+  function handleLogin(userIsAdmin, email) {
     setIsAuthenticated(true);
     setIsAdmin(userIsAdmin);
+    setUserEmail(email || null);
     setInviteToken(null);
     fetchWatchlistIds();
   }
@@ -282,35 +287,17 @@ function App() {
 
   return (
     <div className="bg-gray-950 min-h-screen pb-16">
+      <div className="fixed top-4 right-4 z-50">
+        <UserMenu
+          email={userEmail}
+          isAdmin={isAdmin}
+          onLogout={handleLogout}
+          onOpenAdmin={() => setShowAdminPanel(true)}
+        />
+      </div>
+
       {activeView === 'search' && (
         <header className="py-12 px-4 bg-gradient-to-b from-gray-900 to-gray-950 relative">
-          {/* Admin and Logout buttons */}
-          <div className="absolute top-4 right-4 flex items-center gap-2">
-            {isAdmin && (
-              <button
-                onClick={() => setShowAdminPanel(true)}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
-                aria-label="Admin Panel"
-                title="Admin Panel"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
-            )}
-            <button
-              onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
-              aria-label="Logout"
-              title="Logout"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-          </div>
-
           <div className="max-w-6xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
               Movie Search
