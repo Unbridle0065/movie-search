@@ -8,6 +8,7 @@ import UserMenu from './components/UserMenu';
 import BottomNav from './components/BottomNav';
 import WatchlistView from './components/WatchlistView';
 import ExploreView from './components/ExploreView';
+import GridSizeButton from './components/GridSizeButton';
 import { csrfHeaders } from './utils/csrf';
 
 function App() {
@@ -39,6 +40,15 @@ function App() {
   const [trendingHasMore, setTrendingHasMore] = useState(true);
   const [exploreMode, setExploreMode] = useState('week');
   const [exploreGenre, setExploreGenre] = useState('28'); // Default to Action
+  const [gridColumns, setGridColumns] = useState(() => {
+    const saved = localStorage.getItem('gridColumns');
+    return saved ? Number(saved) : 2;
+  });
+
+  const handleGridColumnsChange = (cols) => {
+    setGridColumns(cols);
+    localStorage.setItem('gridColumns', cols);
+  };
   const lastTrendingFetchRef = useRef(0);
 
   async function fetchWatchlistIds() {
@@ -462,7 +472,7 @@ function App() {
               </div>
             )}
 
-            <MovieGrid movies={movies} onMovieClick={handleSearchMovieClick} />
+            <MovieGrid movies={movies} onMovieClick={handleSearchMovieClick} columns={gridColumns} />
           </>
         ) : activeView === 'trending' ? (
           <ExploreView
@@ -475,6 +485,7 @@ function App() {
             onModeChange={handleModeChange}
             genre={exploreGenre}
             onGenreChange={handleGenreChange}
+            columns={gridColumns}
           />
         ) : (
           <WatchlistView
@@ -509,6 +520,10 @@ function App() {
           onMarkAsWatched={markAsWatched}
           onRemoveFromWatched={removeFromWatched}
         />
+      )}
+
+      {(activeView === 'search' || activeView === 'trending') && (
+        <GridSizeButton columns={gridColumns} onChange={handleGridColumnsChange} />
       )}
 
       <BottomNav activeView={activeView} onViewChange={handleViewChange} />

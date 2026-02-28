@@ -20,7 +20,7 @@ const GENRES = [
   { value: '37', label: 'Western' }
 ];
 
-export default function ExploreView({ movies, onMovieClick, isLoading, hasMore, onLoadMore, mode, onModeChange, genre, onGenreChange }) {
+export default function ExploreView({ movies, onMovieClick, isLoading, hasMore, onLoadMore, mode, onModeChange, genre, onGenreChange, columns }) {
   const loaderRef = useRef(null);
 
   const handleObserver = useCallback((entries) => {
@@ -86,7 +86,7 @@ export default function ExploreView({ movies, onMovieClick, isLoading, hasMore, 
         </div>
       ) : (
         <>
-          <MovieGrid movies={movies} onMovieClick={onMovieClick} />
+          <MovieGrid movies={movies} onMovieClick={onMovieClick} columns={columns} />
 
           <div ref={loaderRef} className="py-8 text-center">
             {isLoading && (
