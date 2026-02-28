@@ -378,7 +378,7 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
                 <h2 className="text-xl font-bold text-white mb-4">Ratings</h2>
                 <div className="space-y-3">
                   {(movie.rottenTomatoes?.criticScore || movie.rottenTomatoes?.audienceScore) && (
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       {movie.rottenTomatoes?.criticScore && (
                         <div className={`${isFresh(movie.rottenTomatoes.criticScore) ? 'bg-red-900/50 border-red-700' : 'bg-green-900/50 border-green-700'} border rounded-lg p-4 flex items-center gap-3`}>
                           <span className="text-3xl">🍅</span>
@@ -400,7 +400,7 @@ export default function MovieDetails({ imdbId, fallbackPoster, onClose, isInWatc
                     </div>
                   )}
                   {((movie.imdbRating && movie.imdbRating !== 'N/A') || (movie.Metascore && movie.Metascore !== 'N/A')) && (
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       {movie.imdbRating && movie.imdbRating !== 'N/A' && (
                         <div className="bg-yellow-900/50 border border-yellow-700 rounded-lg p-4 flex items-center gap-3">
                           <span className="text-3xl">⭐</span>
